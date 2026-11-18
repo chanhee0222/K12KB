@@ -125,7 +125,7 @@ public final class ImeHarness {
      */
     public FakeTextField focus(EditorInfo info) {
         FakeTextField newField = new FakeTextField(ime::onUpdateSelection);
-        attach(newField, info);
+        attach(newField, info, true);
         field = newField;
         return newField;
     }
@@ -137,6 +137,18 @@ public final class ImeHarness {
      * terminal from a window with no editor (InputMethodServiceCoreGesture.IsInputMode).
      */
     public FakeTermux focusTerminal(int inputType) {
+        return focusTerminal(inputType, true);
+    }
+
+    /**
+     * Like focusTerminal, but stops after onStartInput, before the framework shows the window
+     * and builds the input view: keys can already arrive. createInputView() builds it later.
+     */
+    public FakeTermux focusTerminalBeforeInputView(int inputType) {
+        return focusTerminal(inputType, false);
+    }
+
+    private FakeTermux focusTerminal(int inputType, boolean showWindow) {
         EditorInfo info = new EditorInfo();
         info.inputType = inputType;
         info.imeOptions = EditorInfo.IME_FLAG_NO_FULLSCREEN;
@@ -145,7 +157,7 @@ public final class ImeHarness {
         info.packageName = "com.termux";
         info.fieldId = 2;
         FakeTermux terminal = new FakeTermux();
-        attach(terminal, info);
+        attach(terminal, info, showWindow);
         field = null;
         return terminal;
     }
@@ -185,6 +197,23 @@ public final class ImeHarness {
 
     /** Hold a key for 700 ms with auto-repeat downs every 50 ms, release, then pause. */
     public void longPress(int keyCode) {
+        hold(keyCode);
+    }
+
+    /**
+     * Short-then-long: tap the key, then press it again 100 ms after the first down and hold it
+     * as longPress does. The second down lands inside time-double-press (225 ms from the first
+     * down, so K12KB runs its double-press actions) and inside time-long-after-short-press
+     * (600 ms from the first up), so the long-press that follows is a Short2ndLongPress.
+     */
+    public void tapThenLongPress(int keyCode) {
+        tap(keyCode, 0);
+        advance(DOUBLE_TAP_INTERVAL_MS - TAP_HOLD_MS);
+        hold(keyCode);
+    }
+
+    /** Down, repeat downs every 50 ms for 700 ms, up, pause. */
+    private void hold(int keyCode) {
         long downTime = now();
         dispatch(new KeyEvent(downTime, downTime, KeyEvent.ACTION_DOWN, keyCode, 0, 0));
         for (int repeat = 1; repeat * REPEAT_INTERVAL_MS <= LONG_PRESS_HOLD_MS; repeat++) {
@@ -302,7 +331,7 @@ public final class ImeHarness {
      * previous editor's input view and input, start input, show the window (creating the input
      * view the first time), then start the input view.
      */
-    private void attach(InputConnection editor, EditorInfo info) {
+    private void attach(InputConnection editor, EditorInfo info, boolean showWindow) {
         if (focused != null) {
             ime.onFinishInputView(true);
             ime.onFinishInput();
@@ -310,8 +339,10 @@ public final class ImeHarness {
         focused = editor;
         ime.attachField(editor, info);
         ime.onStartInput(info, false);
-        createInputView();
-        ime.onStartInputView(info, false);
+        if (showWindow) {
+            createInputView();
+            ime.onStartInputView(info, false);
+        }
         ShadowLooper.idleMainLooper();
     }
 

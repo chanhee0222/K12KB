@@ -2,12 +2,14 @@ package com.ai10.k12kb.ime;
 
 import static android.view.KeyEvent.KEYCODE_C;
 import static android.view.KeyEvent.KEYCODE_DEL;
+import static android.view.KeyEvent.KEYCODE_Q;
 import static android.view.KeyEvent.KEYCODE_R;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import android.view.View;
+import android.widget.TextView;
 
 import com.ai10.k12kb.testing.FakeTermux;
 import com.ai10.k12kb.testing.FakeTextField;
@@ -34,8 +36,14 @@ public class KoreanTerminalTest {
 
     /** Alt layer of R on the KEY2: bb_key_1_2/alt_hw.json, "single-press-alt-mode" of KEYCODE_R. */
     private static final String ALT_R = "3";
+    /** Alt+Shift layer of Q on the KEY2: alt_hw.json, "single-press-alt-shift-mode" of KEYCODE_Q. */
+    private static final String ALT_SHIFT_Q = "~";
 
     private ImeHarness h;
+
+    private TextView strip() {
+        return h.ime().hangulStripForTest();
+    }
 
     private void start() {
         h = ImeHarness.key2(ENGLISH, KOREAN);
@@ -114,7 +122,7 @@ public class KoreanTerminalTest {
         h.type("gks");
         h.ime().onFinishInput();
         assertEquals("한", t.screen());
-        assertEquals("", h.stripText());
+        assertEquals("no field: strip hidden", View.GONE, strip().getVisibility());
     }
 
     @Test
@@ -144,7 +152,7 @@ public class KoreanTerminalTest {
         h.type("gks");
         assertEquals("[한]|", f.shown());
         assertEquals("", h.stripText());
-        assertEquals(View.GONE, h.ime().hangulStripForTest().getVisibility());
+        assertEquals(View.GONE, strip().getVisibility());
     }
 
     /** Leaving a terminal for an ordinary field: strip hidden, Korean composes in the field again. */
@@ -158,16 +166,86 @@ public class KoreanTerminalTest {
         assertEquals("", h.stripText());
         h.type("rk");
         assertEquals("[가]|", f.shown());
-        assertEquals("", h.stripText());
+        assertEquals(View.GONE, strip().getVisibility());
     }
 
-    /** The session can report a preedit before the framework has built the input view. */
+    /**
+     * The strip keeps its height for the whole terminal session on Korean: showing and hiding
+     * it per word would resize the IME window, and Termux would reflow (SIGWINCH) every word.
+     */
+    @Test
+    public void stripStaysVisibleBetweenWordsInTerminal() {
+        start();
+        FakeTermux t = h.focusTerminal(0);
+        assertEquals(View.VISIBLE, strip().getVisibility());
+        assertEquals("", strip().getText().toString());
+        h.type("gks");
+        assertEquals(View.VISIBLE, strip().getVisibility());
+        assertEquals("한", strip().getText().toString());
+        h.type(" ");
+        assertEquals(View.VISIBLE, strip().getVisibility());
+        assertEquals("", strip().getText().toString());
+        h.type("rk");
+        assertEquals(View.VISIBLE, strip().getVisibility());
+        assertEquals("가", strip().getText().toString());
+        h.type(" ");
+        assertEquals(View.VISIBLE, strip().getVisibility());
+        assertEquals("", strip().getText().toString());
+        assertEquals("한 가 ", t.screen());
+    }
+
+    @Test
+    public void languageSwitchInTerminalHidesAndRestoresStrip() {
+        start();
+        FakeTermux t = h.focusTerminal(0);
+        assertEquals(View.VISIBLE, strip().getVisibility());
+        h.type("gks");
+        h.languageKey(); // to English: the syllable goes to the terminal first
+        assertFalse(h.ime().IsHangulActive());
+        assertEquals("한", t.screen());
+        assertEquals(View.GONE, strip().getVisibility());
+        h.languageKey(); // back to Korean
+        assertTrue(h.ime().IsHangulActive());
+        assertEquals(View.VISIBLE, strip().getVisibility());
+        assertEquals("", strip().getText().toString());
+    }
+
+    /** A terminal focused while English is active: no strip until Korean is chosen. */
+    @Test
+    public void terminalOnEnglishHasNoStrip() {
+        h = ImeHarness.key2(ENGLISH, KOREAN);
+        h.focusTerminal(0);
+        assertFalse(h.ime().IsHangulActive());
+        assertEquals(View.GONE, strip().getVisibility());
+        h.languageKey();
+        assertEquals(View.VISIBLE, strip().getVisibility());
+    }
+
+    /**
+     * Short-then-long on Q in a terminal, defaults: both ㅂ are undone on the strip (see
+     * KoreanLongPressTest.shortThenLongPressUndoesBothJamo), nothing is taken back with DEL.
+     */
+    @Test
+    public void shortThenLongPressInTerminalNeverSendsDel() {
+        start();
+        FakeTermux t = h.focusTerminal(0);
+        h.type("gk");
+        h.tapThenLongPress(KEYCODE_Q);
+        h.type(" ");
+        assertEquals("하" + ALT_SHIFT_Q + " ", t.screen());
+        assertEquals(0, t.dels());
+    }
+
+    /** Keys can arrive before the framework has built the input view; the strip catches up. */
     @Test
     public void stripTextSetBeforeInputViewAppearsWhenViewIsBuilt() {
         start();
-        h.ime().showHangulPreeditForTest("한");
+        FakeTermux t = h.focusTerminalBeforeInputView(0);
+        h.type("gks");
         h.createInputView();
+        assertEquals(View.VISIBLE, strip().getVisibility());
         assertEquals("한", h.stripText());
+        assertEquals("", t.screen());
     }
 
     @Test
@@ -187,6 +265,6 @@ public class KoreanTerminalTest {
         start();
         h.focusTerminal(0);
         h.type("gks");
-        assertFalse(h.ime().hangulStripForTest().isClickable());
+        assertFalse(strip().isClickable());
     }
 }

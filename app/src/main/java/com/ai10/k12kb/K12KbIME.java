@@ -429,6 +429,7 @@ public class K12KbIME extends InputMethodServiceCoreCustomizable implements Keyb
         hangulSession.reset();
         // В терминале слог набирается на полосе над клавиатурой: отправленное туда не забрать.
         hangulSession.setTerminalMode(EditorKind.isTerminal(editorInfo.inputType, editorInfo.initialSelStart));
+        UpdateHangulStripVisibility();
         DropFirstLetterShiftForHangul();
         // Reset session-level prediction bar visibility on new input
         isPackageChangedInsideSingleEvent = false;
@@ -529,6 +530,7 @@ public class K12KbIME extends InputMethodServiceCoreCustomizable implements Keyb
         FinishHangulComposing();
         // До конца разбора этого события режима ввода нет: см. SetInputFinishing.
         SetInputFinishing(true);
+        UpdateHangulStripVisibility(); // поля больше нет
         super.onFinishInput();
 
         try {
@@ -1060,6 +1062,7 @@ public class K12KbIME extends InputMethodServiceCoreCustomizable implements Keyb
         FinishHangulComposing();
         keyboardLayoutManager.ChangeLayout();
         DropFirstLetterShiftForHangul();
+        UpdateHangulStripVisibility();
         if(pref_show_toast) {
             ShowToast(keyboardLayoutManager.GetCurrentKeyboardLayout().KeyboardName);
         }
@@ -1075,6 +1078,7 @@ public class K12KbIME extends InputMethodServiceCoreCustomizable implements Keyb
         FinishHangulComposing();
         keyboardLayoutManager.ChangeLayoutBack();
         DropFirstLetterShiftForHangul();
+        UpdateHangulStripVisibility();
         if(pref_show_toast) {
             ShowToast(keyboardLayoutManager.GetCurrentKeyboardLayout().KeyboardName);
         }

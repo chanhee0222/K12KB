@@ -417,14 +417,19 @@ public abstract class InputMethodServiceCorePrediction extends InputMethodServic
 
     /**
      * Полоса над панелью предсказаний: набираемый в терминале слог (и закрытый текст, который
-     * ещё можно откатить). Создаётся вместе с панелью ввода, даже при выключенных предсказаниях;
-     * скрыта, пока показывать нечего. Только текст, нажимать нечего.
+     * ещё можно откатить). Создаётся вместе с панелью ввода, даже при выключенных предсказаниях.
+     * Видна всё время, пока она нужна (терминал, корейская раскладка), и пустая между словами:
+     * если показывать и прятать её на каждое слово, окно IME меняет высоту, а терминал на каждое
+     * слово пересчитывает строки (SIGWINCH, перерисовка). В остальных случаях скрыта.
+     * Только текст, нажимать нечего.
      */
     protected TextView hangulStrip;
     /** Последний текст для полосы: сеанс может прислать его раньше, чем создана панель ввода. */
     private String hangulPreedit = "";
+    /** Полоса держит место, даже когда текста нет. */
+    private boolean hangulStripReserved;
 
-    /** Показывает text на полосе, "" прячет её. Можно звать с любого потока и до создания панели. */
+    /** Текст полосы ("" — пусто). Можно звать с любого потока и до создания панели. */
     protected void ShowHangulPreedit(String text) {
         final String value = text == null ? "" : text;
         if (Looper.myLooper() != Looper.getMainLooper()) {
@@ -435,10 +440,20 @@ public abstract class InputMethodServiceCorePrediction extends InputMethodServic
         applyHangulPreedit();
     }
 
+    /** true — полоса видна (и пустая держит высоту), false — скрыта. Любой поток, до панели тоже. */
+    protected void ReserveHangulStrip(boolean reserved) {
+        if (Looper.myLooper() != Looper.getMainLooper()) {
+            uiHandler.post(() -> ReserveHangulStrip(reserved));
+            return;
+        }
+        hangulStripReserved = reserved;
+        applyHangulPreedit();
+    }
+
     private void applyHangulPreedit() {
         if (hangulStrip == null) return;
         hangulStrip.setText(hangulPreedit);
-        hangulStrip.setVisibility(hangulPreedit.isEmpty() ? View.GONE : View.VISIBLE);
+        hangulStrip.setVisibility(hangulStripReserved ? View.VISIBLE : View.GONE);
     }
 
     /** Размеры и цвета как у SuggestionBar: та же высота (с полосками-разделителями), шрифт, фон. */

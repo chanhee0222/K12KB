@@ -110,6 +110,15 @@ public abstract class InputMethodServiceCoreCustomizable extends InputMethodServ
         }
     }
 
+    /**
+     * Полоса хангыля видна, пока есть поле, это терминал и активна корейская раскладка; иначе
+     * скрыта. Звать, когда что-то из этого меняется: начало и конец ввода, смена раскладки.
+     */
+    protected void UpdateHangulStripVisibility() {
+        ReserveHangulStrip(hangulSession != null && hangulSession.isTerminalMode()
+                && IsHangulActive() && IsInputMode());
+    }
+
     /** Дописывает набираемый слог, если он есть; иначе ничего не делает. */
     protected void FinishHangulComposing() {
         if (hangulSession != null && hangulSession.isComposing()) {

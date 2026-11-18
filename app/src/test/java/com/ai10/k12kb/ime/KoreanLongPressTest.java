@@ -32,6 +32,8 @@ public class KoreanLongPressTest {
 
     /** Alt layer of Q on the KEY2: bb_key_1_2/alt_hw.json, "single-press-alt-mode" of KEYCODE_Q. */
     private static final String ALT_Q = "#";
+    /** Alt+Shift layer of Q on the KEY2: alt_hw.json, "single-press-alt-shift-mode" of KEYCODE_Q. */
+    private static final String ALT_SHIFT_Q = "~";
     /** Alt layer of KEYCODE_4 on the KEY2 (alt_hw.json); the Korean layer of that key is also '$'. */
     private static final String ALT_4 = "$";
 
@@ -94,6 +96,34 @@ public class KoreanLongPressTest {
         h.type("rkf");
         h.longPress(KEYCODE_Q);
         assertEquals("갈" + ALT_Q + "|", f.shown());
+    }
+
+    /**
+     * Short-then-long on Q, defaults. The tap gives 합; the second down is a double-press, and Q
+     * has no double-press form, so it types a second ㅂ: 합ㅂ. The Short2ndLongPress then runs
+     * ActionSendCharLongPressAltSymbolNoMeta: Q is unpaired, so DeleteLastSymbol undoes the
+     * second ㅂ (합); the char before the cursor (합) is not Alt+Q, so the replacement is Alt+Shift+Q;
+     * a second DeleteLastSymbol undoes the tap's ㅂ (하). Both ㅂ are gone.
+     */
+    @Test
+    public void shortThenLongPressUndoesBothJamo() {
+        startWithDefaults();
+        h.type("gk");
+        h.tapThenLongPress(KEYCODE_Q);
+        assertEquals("하" + ALT_SHIFT_Q + "|", f.shown());
+    }
+
+    /**
+     * Short-then-long on Q with long_press_alt off: ActionSendCharLongPressCapitalize undoes once
+     * (the second ㅂ) and sends the double-press Shift form, which Q does not have (code 0, which
+     * SendLetterOrSymbol ignores). What is left is the tap's ㅂ on 하.
+     */
+    @Test
+    public void shortThenLongPressCapitalizeUndoesTheSecondJamo() {
+        startWithLongPressCapitalize();
+        h.type("gk");
+        h.tapThenLongPress(KEYCODE_Q);
+        assertEquals("[합]|", f.shown());
     }
 
     /**

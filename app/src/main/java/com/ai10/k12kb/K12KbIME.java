@@ -427,6 +427,7 @@ public class K12KbIME extends InputMethodServiceCoreCustomizable implements Keyb
             return;
         // Новое поле: слог из старого сюда не пишем (его дописал onFinishInput, пока поле было живо).
         hangulSession.reset();
+        hangulDelConsumed = false;
         // В терминале слог набирается на полосе над клавиатурой: отправленное туда не забрать.
         hangulSession.setTerminalMode(EditorKind.isTerminal(editorInfo.inputType, editorInfo.initialSelStart));
         UpdateHangulStripVisibility();
@@ -653,10 +654,12 @@ public class K12KbIME extends InputMethodServiceCoreCustomizable implements Keyb
      * числе Shift, Alt, Ctrl и Sym, проходят дальше нетронутыми: слог решают швы, а не эта проверка.
      */
     private boolean TryHangulBackspace(int keyCode, KeyEvent event) {
-        if (keyCode != KeyEvent.KEYCODE_DEL || !IsHangulActive())
+        if (keyCode != KeyEvent.KEYCODE_DEL)
             return false;
+        // Сбрасываем на любом Del, а не только при хангыле: если отпускание Del, забранного
+        // сеансом, потерялось, иначе съели бы отпускание следующего Del на другой раскладке.
         hangulDelConsumed = false;
-        if (!hangulSession.isComposing())
+        if (!IsHangulActive() || !hangulSession.isComposing())
             return false;
         if (event.isShiftPressed() || event.isAltPressed() || event.isCtrlPressed()
                 || MetaIsShiftPressed() || MetaIsAltPressed() || MetaIsCtrlPressed()
@@ -667,13 +670,21 @@ public class K12KbIME extends InputMethodServiceCoreCustomizable implements Keyb
     }
 
     /**
+     * Сырой код 289: в механике KEY2 (keyboard_mechanics.json) стоит в группе удержания Ctrl рядом
+     * с Ctrl, правым Shift и Function, но Android модификатором его не считает. Для слога это
+     * модификатор: одно его нажатие слог не прерывает.
+     */
+    private static final int KEY2_CTRL_HOLD_RAW_KEYCODE = 289;
+
+    /**
      * Пока набирается слог, клавиша вне буквенной группы раскладки (D-pad, Tab, Enter, пробел…)
      * сначала дописывает его: такую клавишу клавиатура может отдать приложению, и тогда ни шов по
      * символу, ни обёртка соединения её не увидят. Буквы решает шов по символу; модификаторы и Del
      * слог не трогают.
      */
     private void FinishHangulBeforeNonLetterKey(int keyCode) {
-        if (keyCode == KeyEvent.KEYCODE_DEL || KeyEvent.isModifierKey(keyCode))
+        if (keyCode == KeyEvent.KEYCODE_DEL || KeyEvent.isModifierKey(keyCode)
+                || keyCode == KEY2_CTRL_HOLD_RAW_KEYCODE)
             return;
         if (!IsHangulActive() || !hangulSession.isComposing())
             return;
@@ -1853,7 +1864,13 @@ public class K12KbIME extends InputMethodServiceCoreCustomizable implements Keyb
             k12KbSettings.SetBooleanValue(defLayout.getPreferenceName(), true);
             activeLayouts.add(defLayout);
         }
+        // Раскладки пересобираются (загрузка, возврат из настроек, смена языковых пакетов):
+        // набираемый слог дописываем по старой, а полосу хангыля приводим к новой — активной
+        // после пересборки может оказаться другая раскладка.
+        FinishHangulComposing();
         keyboardLayoutManager.Initialize(activeLayouts, getResources(), getApplicationContext());
+        UpdateHangulStripVisibility();
+        ShowWindowForHangulStrip();
 
     }
 

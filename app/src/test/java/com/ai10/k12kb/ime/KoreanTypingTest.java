@@ -197,4 +197,39 @@ public class KoreanTypingTest {
         h.type("hello");
         assertEquals("hello|", f.shown());
     }
+
+    /**
+     * The session took a Del key-down and its key-up was lost (focus moved, layout switched while
+     * Del was held). The next English Del must reach the app whole, key-up included.
+     */
+    @Test
+    public void lostDelKeyUpDoesNotSwallowEnglishDelKeyUp() {
+        h.type("gk");
+        assertTrue("the session takes Del", h.down(KEYCODE_DEL));
+        assertEquals("[ㅎ]|", f.shown());
+        h.languageKey(); // English; the Hangul Del is never released
+        assertFalse(h.ime().IsHangulActive());
+        assertFalse(h.down(KEYCODE_DEL));
+        assertEquals("|", f.shown());
+        assertFalse("the app gets its key-up", h.up(KEYCODE_DEL));
+    }
+
+    /** A language pack installed or removed re-reads the layouts: the syllable is finished first. */
+    @Test
+    public void languagePackReloadFinishesSyllable() {
+        h.type("gks");
+        h.ime().reloadLanguagePacksForTest();
+        assertEquals("한|", f.shown());
+        assertFalse(h.ime().hangulComposingForTest());
+        assertTrue(h.ime().IsHangulActive());
+    }
+
+    /** A new field starts with no Del held by the session. */
+    @Test
+    public void newFieldForgetsDelTakenBySession() {
+        h.type("gk");
+        assertTrue(h.down(KEYCODE_DEL));
+        h.focusText();
+        assertFalse(h.up(KEYCODE_DEL));
+    }
 }

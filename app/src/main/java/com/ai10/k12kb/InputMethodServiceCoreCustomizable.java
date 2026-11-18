@@ -2576,7 +2576,8 @@ public abstract class InputMethodServiceCoreCustomizable extends InputMethodServ
 
     private void DeleteLastSymbol() {
         // В хангыле это откат последней джамо (долгое нажатие заменяет то, что ввело нажатие),
-        // а не удаление символа: 갈+ㅂ=갋 откатывается в 갈. Нет истории отката — как раньше.
+        // а не удаление символа: 갈+ㅂ=갋 откатывается в 갈. Если поле больше не держит слог, сеанс
+        // дописывается как есть и здесь тоже ничего не удаляется. Нет истории отката — как раньше.
         if (IsHangulActive() && hangulSession.undoLastJamo())
             return;
         InputConnection inputConnection = getCurrentInputConnection();

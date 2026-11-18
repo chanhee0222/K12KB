@@ -53,6 +53,8 @@ public final class ImeHarness {
     private InputConnection focused;
     private boolean inputViewCreated;
     private FakePredictionEngine predictionEngine;
+    /** Down time of each key pressed with down() and not yet released with up(). */
+    private final java.util.Map<Integer, Long> downTimes = new java.util.HashMap<>();
 
     private ImeHarness(TestK12KbIME ime) {
         this.ime = ime;
@@ -227,7 +229,32 @@ public final class ImeHarness {
 
     /** Hold a key for 700 ms with auto-repeat downs every 50 ms, release, then pause. */
     public void longPress(int keyCode) {
-        hold(keyCode);
+        hold(keyCode, null);
+    }
+
+    /**
+     * longPress, with afterFirstDown run right after the first key-down, before any repeat: e.g.
+     * the app changes the field while the key is held.
+     */
+    public void longPress(int keyCode, Runnable afterFirstDown) {
+        hold(keyCode, afterFirstDown);
+    }
+
+    /**
+     * Key-down alone, with no pause: what onKeyDown returned. A declined key goes on to the
+     * editor, as with every key here. up() releases it; a test can also leave it unreleased.
+     */
+    public boolean down(int keyCode) {
+        long downTime = now();
+        downTimes.put(keyCode, downTime);
+        return dispatch(new KeyEvent(downTime, downTime, KeyEvent.ACTION_DOWN, keyCode, 0, 0));
+    }
+
+    /** Key-up alone, with no pause: what onKeyUp returned. */
+    public boolean up(int keyCode) {
+        Long downTime = downTimes.remove(keyCode);
+        return dispatch(new KeyEvent(downTime != null ? downTime : now(), now(),
+                KeyEvent.ACTION_UP, keyCode, 0, 0));
     }
 
     /**
@@ -239,13 +266,14 @@ public final class ImeHarness {
     public void tapThenLongPress(int keyCode) {
         tap(keyCode, 0);
         advance(DOUBLE_TAP_INTERVAL_MS - TAP_HOLD_MS);
-        hold(keyCode);
+        hold(keyCode, null);
     }
 
-    /** Down, repeat downs every 50 ms for 700 ms, up, pause. */
-    private void hold(int keyCode) {
+    /** Down, [afterFirstDown], repeat downs every 50 ms for 700 ms, up, pause. */
+    private void hold(int keyCode, Runnable afterFirstDown) {
         long downTime = now();
         dispatch(new KeyEvent(downTime, downTime, KeyEvent.ACTION_DOWN, keyCode, 0, 0));
+        if (afterFirstDown != null) afterFirstDown.run();
         for (int repeat = 1; repeat * REPEAT_INTERVAL_MS <= LONG_PRESS_HOLD_MS; repeat++) {
             advance(REPEAT_INTERVAL_MS);
             dispatch(new KeyEvent(downTime, now(), KeyEvent.ACTION_DOWN, keyCode, repeat, 0));
@@ -344,9 +372,9 @@ public final class ImeHarness {
 
     /**
      * Gives the event to the IME; a key the IME declines goes on to the app, which
-     * applies it to the focused field.
+     * applies it to the focused field. Returns whether the IME consumed it.
      */
-    private void dispatch(KeyEvent event) {
+    private boolean dispatch(KeyEvent event) {
         boolean consumed = event.getAction() == KeyEvent.ACTION_DOWN
                 ? ime.onKeyDown(event.getKeyCode(), event)
                 : ime.onKeyUp(event.getKeyCode(), event);
@@ -354,6 +382,7 @@ public final class ImeHarness {
             focused.sendKeyEvent(event);
         }
         ShadowLooper.idleMainLooper();
+        return consumed;
     }
 
     /**

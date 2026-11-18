@@ -44,10 +44,21 @@ public final class HangulSessionCursorTest {
         assertFalse(s.isComposing());
     }
 
-    @Test public void undoAfterExternalClearReturnsFalse() {
+    // Редактор больше не держит слог: откат дописывает сеанс как есть и отвечает true, чтобы
+    // вызывающий (долгое нажатие) не стёр вместо джамо настоящий символ поля.
+    @Test public void undoAfterExternalClearFinishesAndDeletesNothing() {
         typeJamo(s, "ㅎㅏ"); ed.clearExternally();
-        assertFalse(s.undoLastJamo());
+        assertTrue(s.undoLastJamo());
         assertFalse(s.isComposing());
+        assertEquals("", ed.text());
+        assertFalse(ed.calls.stream().anyMatch(c -> c.startsWith("del:")));
+    }
+
+    // Без истории (после финиша) откат по-прежнему отказывается: удаляет вызывающий.
+    @Test public void undoAfterExternalClearAndFinishHasNoHistory() {
+        typeJamo(s, "ㅎㅏ"); ed.clearExternally();
+        s.undoLastJamo();
+        assertFalse(s.undoLastJamo());
     }
 
     @Test public void ownEchoesKeepComposing() { typeJamo(s, "ㅎㅏ"); feed(ed.report()); typeJamo(s, "ㄴ"); assertEquals("[한]|", ed.shown()); }

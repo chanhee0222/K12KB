@@ -145,10 +145,14 @@ public final class HangulSession {
         return true;
     }
 
-    /** false: нет истории отката. */
+    /**
+     * true: сеанс справился сам — откатил последнюю джамо, либо редактор больше не держит слог,
+     * и сеанс дописан как есть (откатывать в поле нечего, удалять тоже). false: истории отката
+     * нет, удаляет вызывающий.
+     */
     public boolean undoLastJamo() {
         if (guardEditorHoldsSyllable()) {
-            return false;
+            return true;
         }
         if (history.isEmpty()) {
             return false;

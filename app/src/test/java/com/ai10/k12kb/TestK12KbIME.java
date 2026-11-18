@@ -175,6 +175,20 @@ public class TestK12KbIME extends K12KbIME {
 
     // endregion
 
+    /**
+     * Runs K12KbIME's language-pack reload (the private Runnable languagePacksReload) now, as the
+     * pack receiver's delayed post would after a pack is installed or removed.
+     */
+    public void reloadLanguagePacksForTest() {
+        try {
+            java.lang.reflect.Field f = K12KbIME.class.getDeclaredField("languagePacksReload");
+            f.setAccessible(true);
+            ((Runnable) f.get(this)).run();
+        } catch (ReflectiveOperationException e) {
+            throw new AssertionError(e);
+        }
+    }
+
     public void ChangeLanguageForTest() {
         ChangeLanguage();
     }

@@ -173,4 +173,17 @@ public class KoreanForeignActionsTest {
         h.type("s");
         assertEquals("[한]|", f.shown());
     }
+
+    /**
+     * Raw keycode 289 sits in the KEY2 Ctrl-hold group of keyboard_mechanics.json (with Ctrl,
+     * Right Shift and Function) but is not an Android modifier. Pressed alone it must not break
+     * the syllable either.
+     */
+    @Test
+    public void key289AloneKeepsSyllable() {
+        h.type("gk");
+        h.tap(289);
+        h.type("s");
+        assertEquals("[한]|", f.shown());
+    }
 }

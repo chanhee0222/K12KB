@@ -137,4 +137,18 @@ public class KoreanLongPressTest {
         h.longPress(KEYCODE_4);
         assertEquals("하" + ALT_4 + "|", f.shown());
     }
+
+    /**
+     * While Q is held the app replaces the field's text and its report has not arrived yet. The
+     * long-press undo finds that the field no longer holds the syllable: the session is finished
+     * as it stands and nothing else is deleted ("abc" keeps its c), then the replacement composes.
+     */
+    @Test
+    public void longPressAfterAppChangedFieldDeletesNothing() {
+        startWithLongPressCapitalize();
+        h.type("rk");
+        f.deferReports(true);
+        h.longPress(KEYCODE_Q, () -> f.setText("abc", 3));
+        assertEquals("abc[ㅃ]|", f.shown());
+    }
 }

@@ -260,6 +260,40 @@ public class KoreanTerminalTest {
         assertEquals("한", h.stripText());
     }
 
+    /** A pack reload re-reads the layouts: the syllable goes to the terminal, the strip stays. */
+    @Test
+    public void languagePackReloadSendsSyllable() {
+        start();
+        FakeTermux t = h.focusTerminal(0);
+        h.type("gks");
+        h.ime().reloadLanguagePacksForTest();
+        assertEquals("한", t.screen());
+        assertEquals(0, t.dels());
+        assertEquals(View.VISIBLE, strip().getVisibility());
+        assertEquals("", h.stripText());
+        h.type("rk ");
+        assertEquals("한가 ", t.screen());
+    }
+
+    /**
+     * The reload can change the active layout: here English is switched off while a terminal is
+     * focused on it, and the reloaded list is Korean only. The strip appears, with its window.
+     */
+    @Test
+    public void languagePackReloadOntoKoreanShowsStrip() {
+        h = ImeHarness.key2(ENGLISH, KOREAN);
+        FakeTermux t = h.focusTerminal(0);
+        assertEquals(View.GONE, strip().getVisibility());
+        ImeHarness.prefBeforeBoot("GENERATED_PREF_KEYBOARD_LAYOUT_" + ENGLISH, false);
+        h.ime().reloadLanguagePacksForTest();
+        assertTrue(h.ime().IsHangulActive());
+        assertEquals(View.VISIBLE, strip().getVisibility());
+        assertTrue(h.windowShown());
+        h.type("gks");
+        assertEquals("한", h.stripText());
+        assertEquals("", t.screen());
+    }
+
     @Test
     public void stripIsNotTappable() {
         start();

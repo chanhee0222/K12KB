@@ -18,8 +18,10 @@ import android.view.inputmethod.InputContentInfo;
  *   <li>setComposingText only holds the text, finishComposingText sends what is held;</li>
  *   <li>deleteSurroundingText(n, 0) sends n DEL key events;</li>
  *   <li>a key event goes to the terminal as TerminalView.onKeyDown handles it: DEL erases the
- *       last character, a printable key types its character, Ctrl+letter sends the control
- *       code (Ctrl+C is U+0003); keys with no character send nothing here;</li>
+ *       last character; Enter, Tab and the arrows send what Termux's KeyHandler sends for them
+ *       (CR, HT, and CSI D/C/A/B in normal cursor mode); a printable key types its character,
+ *       Ctrl+letter sends the control code (Ctrl+C is U+0003); keys with no character send
+ *       nothing here;</li>
  *   <li>nothing can be read back (getTextBeforeCursor is ""), and the terminal never reports
  *       a selection.</li>
  * </ul>
@@ -77,6 +79,11 @@ public final class FakeTermux implements InputConnection {
         if (event.getAction() != KeyEvent.ACTION_DOWN) return true;
         if (event.getKeyCode() == KeyEvent.KEYCODE_DEL) {
             del();
+            return true;
+        }
+        String code = keyHandlerCode(event.getKeyCode());
+        if (code != null) {
+            screen.append(code);
             return true;
         }
         int meta = event.getMetaState() & ~KeyEvent.META_CTRL_MASK;
@@ -203,6 +210,19 @@ public final class FakeTermux implements InputConnection {
     }
 
     // endregion
+
+    /** Termux KeyHandler.getCode for the keys modelled here, unmodified, normal cursor mode. */
+    private static String keyHandlerCode(int keyCode) {
+        switch (keyCode) {
+            case KeyEvent.KEYCODE_ENTER: return "\r";
+            case KeyEvent.KEYCODE_TAB: return "\t";
+            case KeyEvent.KEYCODE_DPAD_LEFT: return "\033[D";
+            case KeyEvent.KEYCODE_DPAD_RIGHT: return "\033[C";
+            case KeyEvent.KEYCODE_DPAD_UP: return "\033[A";
+            case KeyEvent.KEYCODE_DPAD_DOWN: return "\033[B";
+            default: return null;
+        }
+    }
 
     private void del() {
         dels++;

@@ -14,6 +14,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
+import android.view.KeyEvent;
 import android.view.inputmethod.InputConnection;
 
 import com.ai10.k12kb.testing.FakeTextField;
@@ -103,6 +104,21 @@ public class KoreanForeignActionsTest {
         h.type("gks");
         h.alt(KEYCODE_Q);
         assertEquals("한" + ALT_Q + "|", f.shown());
+    }
+
+    /**
+     * Key 0 held + swipe left (the KEY2 cursor gesture). Key 0's down is also a language-key
+     * short press, which the swipe undoes, so Korean is active again afterwards.
+     */
+    @Test
+    public void cursorGestureMidSyllable() {
+        h.type("gks");
+        h.holdAndSwipe(KeyEvent.KEYCODE_0, -60, 1);
+        assertEquals("|한", f.shown());
+        assertFalse(h.ime().hangulComposingForTest());
+        assertTrue(h.ime().IsHangulActive());
+        h.type("rk");
+        assertEquals("[가]|한", f.shown());
     }
 
     @Test

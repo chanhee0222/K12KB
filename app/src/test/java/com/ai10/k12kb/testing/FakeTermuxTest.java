@@ -71,6 +71,18 @@ public class FakeTermuxTest {
         assertEquals("\u0003", t.screen());
     }
 
+    /** Termux's KeyHandler: Enter sends CR, Tab sends HT, arrows send CSI sequences. */
+    @Test
+    public void enterTabAndArrowsSendTerminalCodes() {
+        for (int code : new int[] {KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_TAB,
+                KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_DPAD_RIGHT,
+                KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_DOWN}) {
+            t.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, code));
+            t.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, code));
+        }
+        assertEquals("\r\t\033[D\033[C\033[A\033[B", t.screen());
+    }
+
     @Test
     public void modifierKeySendsNothing() {
         t.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_CTRL_LEFT));

@@ -6,6 +6,7 @@ import android.content.Context;
 import android.os.SystemClock;
 import android.text.InputType;
 import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
 
@@ -280,6 +281,38 @@ public final class ImeHarness {
         }
         dispatch(new KeyEvent(downTime, now(), KeyEvent.ACTION_UP, keyCode, 0, 0));
         advance(KEY_GAP_MS);
+    }
+
+    /**
+     * Holds a key and swipes one finger across the KEY2's touch-sensitive keys: finger down, then
+     * `moves` move events dx pixels apart, 50 ms apart (each with the held key's auto-repeat), then
+     * finger up, key up, pause. On the KEY2, holding key 0 turns the swipe into cursor movement
+     * (keyboard_mechanics.json: KEYCODE_0 on-hold-on ActionTryEnableGestureCursorModeOnHoldState).
+     */
+    public void holdAndSwipe(int keyCode, float dx, int moves) {
+        long keyDown = now();
+        dispatch(new KeyEvent(keyDown, keyDown, KeyEvent.ACTION_DOWN, keyCode, 0, 0));
+        float x = 600;
+        float y = 100;
+        long touchDown = now();
+        motion(touchDown, MotionEvent.ACTION_DOWN, x, y);
+        for (int i = 1; i <= moves; i++) {
+            advance(REPEAT_INTERVAL_MS);
+            dispatch(new KeyEvent(keyDown, now(), KeyEvent.ACTION_DOWN, keyCode, i, 0));
+            x += dx;
+            motion(touchDown, MotionEvent.ACTION_MOVE, x, y);
+        }
+        motion(touchDown, MotionEvent.ACTION_UP, x, y);
+        advance(TAP_HOLD_MS);
+        dispatch(new KeyEvent(keyDown, now(), KeyEvent.ACTION_UP, keyCode, 0, 0));
+        advance(KEY_GAP_MS);
+    }
+
+    private void motion(long downTime, int action, float x, float y) {
+        MotionEvent event = MotionEvent.obtain(downTime, now(), action, x, y, 0);
+        ime.onGenericMotionEvent(event);
+        event.recycle();
+        ShadowLooper.idleMainLooper();
     }
 
     /** Short tap of the language key (KEY2 mechanics: KEYCODE_0 -> ActionChangeKeyboardLayout). */

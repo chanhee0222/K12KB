@@ -91,6 +91,40 @@ public class EnglishRegressionTest {
         assertEquals("A|", field.shown());
     }
 
+    /**
+     * The English layout has no double-press entries: a fast second tap of a letter finds it
+     * unpaired (ActionSendCharDoublePressNoMeta) and types the plain letter again.
+     */
+    @Test
+    public void doublePressLetterTypesItTwice() {
+        ImeHarness h = ImeHarness.key2(ENGLISH);
+        FakeTextField field = h.focusText();
+        h.doubleTap(KeyEvent.KEYCODE_A);
+        assertEquals("aa|", field.shown());
+    }
+
+    /** Space double-press: ActionTryDoubleSpaceDotSpaceConversion in keyboard_mechanics.json. */
+    @Test
+    public void doublePressSpace() {
+        ImeHarness h = ImeHarness.key2(ENGLISH);
+        FakeTextField field = h.focusText();
+        h.type("ab");
+        h.doubleTap(KeyEvent.KEYCODE_SPACE);
+        assertEquals("ab. |", field.shown());
+    }
+
+    /** Key 0 held + a swipe left across the keys moves the cursor left, one character per step. */
+    @Test
+    public void key0HoldSwipeMovesCursor() {
+        ImeHarness h = ImeHarness.key2(ENGLISH);
+        FakeTextField field = h.focusText();
+        h.type("abc");
+        h.holdAndSwipe(KeyEvent.KEYCODE_0, -60, 2);
+        assertEquals("a|bc", field.shown());
+        h.type("x");
+        assertEquals("ax|bc", field.shown());
+    }
+
     /** ImeHarness.key2 writes only the settings it owns, so this one survives into the boot. */
     private static void writeSettingBeforeBoot(String name, boolean value) {
         RuntimeEnvironment.getApplication()

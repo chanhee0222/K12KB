@@ -382,6 +382,14 @@ public class K12KbIME extends InputMethodServiceCoreCustomizable implements Keyb
     }
 
     @Override
+    public void onWindowHidden() {
+        // Пока соединение ещё действует.
+        if (!isNotStarted)
+            FinishHangulComposing();
+        super.onWindowHidden();
+    }
+
+    @Override
     public void onFinishInputView(boolean finishingInput) {
         Log.d(TAG2, "onFinishInputView");
         super.onFinishInputView(finishingInput);
@@ -416,6 +424,8 @@ public class K12KbIME extends InputMethodServiceCoreCustomizable implements Keyb
         super.onStartInput(editorInfo, restarting);
         if(restarting)
             return;
+        // Новое поле: слог из старого сюда не пишем (его дописал onFinishInput, пока поле было живо).
+        hangulSession.reset();
         // Reset session-level prediction bar visibility on new input
         isPackageChangedInsideSingleEvent = false;
         // Обрабатываем переход между приложениями
@@ -511,6 +521,8 @@ public class K12KbIME extends InputMethodServiceCoreCustomizable implements Keyb
         Log.d(TAG2, "onFinishInput ");
         if(isNotStarted)
             return;
+        // Пока старое соединение ещё действует.
+        FinishHangulComposing();
         // До конца разбора этого события режима ввода нет: см. SetInputFinishing.
         SetInputFinishing(true);
         super.onFinishInput();
@@ -571,6 +583,9 @@ public class K12KbIME extends InputMethodServiceCoreCustomizable implements Keyb
         keyboardView.hidePopup(false);
         Log.v(TAG2, "onKeyDown " + event);
 
+        if (TryHangulBackspace(keyCode, event))
+            return true;
+
         if(
             !IsInputMode()
             && _currentAppTransparency
@@ -620,6 +635,27 @@ public class K12KbIME extends InputMethodServiceCoreCustomizable implements Keyb
         return !isShiftSelection;
     }
 
+    /** Последнее нажатие Del (с повторами) забрал сеанс хангыля; его отпускание тоже наше. */
+    private boolean hangulDelConsumed;
+
+    /**
+     * Del без модификаторов, пока набирается слог: удаляет по одному джамо. Остальные клавиши, в том
+     * числе Shift, Alt, Ctrl и Sym, проходят дальше нетронутыми: слог решают швы, а не эта проверка.
+     */
+    private boolean TryHangulBackspace(int keyCode, KeyEvent event) {
+        if (keyCode != KeyEvent.KEYCODE_DEL || !IsHangulActive())
+            return false;
+        hangulDelConsumed = false;
+        if (!hangulSession.isComposing())
+            return false;
+        if (event.isShiftPressed() || event.isAltPressed() || event.isCtrlPressed()
+                || MetaIsShiftPressed() || MetaIsAltPressed() || MetaIsCtrlPressed()
+                || MetaIsKey0Pressed())
+            return false;
+        hangulDelConsumed = hangulSession.backspace();
+        return hangulDelConsumed;
+    }
+
     private boolean IsNavModeExtraKeyTransparency(int keyCode) {
         return navSwitcherKeyCode == keyCode || keyCode == KeyEvent.KEYCODE_SHIFT_LEFT || keyCode == KeyEvent.KEYCODE_SHIFT_RIGHT;
     }
@@ -630,6 +666,10 @@ public class K12KbIME extends InputMethodServiceCoreCustomizable implements Keyb
         Log.v(TAG2, "onKeyUp " + event);
         if(isNotStarted)
             return false;
+        if (keyCode == KeyEvent.KEYCODE_DEL && hangulDelConsumed) {
+            hangulDelConsumed = false;
+            return true;
+        }
         //region Блок навигационной клавиатуры
 
         if (IsNavMode() && !IsNavModeExtraKeyTransparency(keyCode)) {
@@ -728,6 +768,8 @@ public class K12KbIME extends InputMethodServiceCoreCustomizable implements Keyb
         }
         CurrentSelectionStart = newSelStart;
         CurrentSelectionEnd = newSelEnd;
+        if (IsHangulActive())
+            hangulSession.onSelectionUpdate(newSelStart, newSelEnd, composingSpanStart, composingSpanEnd);
         ProcessOnCursorMovement(getCurrentInputEditorInfo());
 
         // Update word predictor when cursor moves (not just from typing)
@@ -994,6 +1036,7 @@ public class K12KbIME extends InputMethodServiceCoreCustomizable implements Keyb
 
     @Override
     protected void ChangeLanguage() {
+        FinishHangulComposing();
         keyboardLayoutManager.ChangeLayout();
         if(pref_show_toast) {
             ShowToast(keyboardLayoutManager.GetCurrentKeyboardLayout().KeyboardName);
@@ -1007,6 +1050,7 @@ public class K12KbIME extends InputMethodServiceCoreCustomizable implements Keyb
 
     @Override
     protected void ChangeLanguageBack() {
+        FinishHangulComposing();
         keyboardLayoutManager.ChangeLayoutBack();
         if(pref_show_toast) {
             ShowToast(keyboardLayoutManager.GetCurrentKeyboardLayout().KeyboardName);

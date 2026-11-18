@@ -23,6 +23,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.android.voiceime.VoiceRecognitionTrigger;
 import com.ai10.k12kb.input.CallStateCallback;
+import com.ai10.k12kb.hangul.HangulJamo;
+import com.ai10.k12kb.hangul.HangulSession;
+import com.ai10.k12kb.hangul.InputConnectionHangulEditor;
 
 
 import java.lang.reflect.*;
@@ -82,6 +85,26 @@ public abstract class InputMethodServiceCoreCustomizable extends InputMethodServ
     protected Vibrator vibratorService;
 
     protected int TIME_VIBRATE;
+
+    /**
+     * Набор хангыля. Пишет только через RawInputConnection(): обёртка getCurrentInputConnection()
+     * дописывает слог перед чужими правками и не должна срабатывать на записи самого сеанса.
+     */
+    protected HangulSession hangulSession;
+
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        hangulSession = new HangulSession(new InputConnectionHangulEditor(this::RawInputConnection), text -> { });
+    }
+
+    /** Дописывает набираемый слог, если он есть; иначе ничего не делает. */
+    protected void FinishHangulComposing() {
+        if (hangulSession != null && hangulSession.isComposing()) {
+            hangulSession.finish();
+        }
+    }
 
     //region KEYBOARD_MECHANICS LOAD
 
@@ -1431,6 +1454,9 @@ public abstract class InputMethodServiceCoreCustomizable extends InputMethodServ
 
 
     public boolean ActionDeletePreviousSymbol() {
+        // Пока набирается слог, это Backspace по джамо, а не откат последнего ввода.
+        if (IsHangulActive() && hangulSession.backspace())
+            return true;
         DeleteLastSymbol();
         return true;
     }
@@ -2307,7 +2333,18 @@ public abstract class InputMethodServiceCoreCustomizable extends InputMethodServ
     //endregion
 
     private void SendLetterOrSymbol(int code2send) {
-
+        if (IsHangulActive()) {
+            if (code2send == 0)
+                return;
+            if (HangulJamo.isJamo((char) code2send)) {
+                // Джамо идёт в сеанс: ни sendKeyChar, ни предсказателя.
+                BeforeSendChar.Process(null, null);
+                hangulSession.input((char) code2send);
+                AfterSendChar.Process(null, null);
+                return;
+            }
+        }
+        FinishHangulComposing();
 
         BeforeSendChar.Process(null, null);
 
@@ -2399,6 +2436,15 @@ public abstract class InputMethodServiceCoreCustomizable extends InputMethodServ
         //NOTE: Проверка не дает вводить Заглавную прям на первом входе в приложение. Видимо не успевает еще активироваться.
         //if(!isInputViewShown())
         //    return;
+
+        // У хангыля нет заглавных, а Shift дал бы напряжённую согласную (ㅂ -> ㅃ).
+        if (IsHangulActive()) {
+            if (metaFixedModeFirstLetterUpper) {
+                metaFixedModeFirstLetterUpper = false;
+                return true;
+            }
+            return false;
+        }
 
         if(!pref_auto_capitalization)
             return false;

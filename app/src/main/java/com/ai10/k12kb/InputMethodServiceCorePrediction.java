@@ -590,6 +590,9 @@ public abstract class InputMethodServiceCorePrediction extends InputMethodServic
     }
 
     protected void onUpdateSelectionPrediction(int newSelStart, int newSelEnd) {
+        // При хангыле предсказание выключено: WordPredictor не кормим джамо.
+        if (IsHangulActive())
+            return;
         if (wordPredictor != null && wordPredictor.isEnabled() && newSelStart == newSelEnd) {
             updatePredictorWordAtCursor();
         }

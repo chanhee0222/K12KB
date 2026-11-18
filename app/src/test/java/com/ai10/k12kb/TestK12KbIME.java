@@ -71,6 +71,11 @@ public class TestK12KbIME extends K12KbIME {
         return super.IsHangulActive();
     }
 
+    /** A Hangul syllable is in progress (or, in a terminal, held back). */
+    public boolean hangulComposingForTest() {
+        return hangulSession.isComposing();
+    }
+
     /** What the active layout sends for a key; builds the (private-constructor) KeyPressData by reflection. */
     public int keyToCharCodeForTest(int keyCode, boolean alt, boolean shift) {
         try {

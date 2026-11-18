@@ -485,10 +485,13 @@ public class K12KbIME extends InputMethodServiceCoreCustomizable implements Keyb
                 && Orientation == 1) {
             keyboardView.setOnTouchListener(this);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                this.requestShowSelf(InputMethodManager.SHOW_IMPLICIT);
+                RequestShowSelfImplicit();
             } else {
                 this.showWindow(false);
             }
+        } else if (!pref_show_default_onscreen_keyboard && HangulStripNeeded()) {
+            // Терминал на корейской раскладке: набираемый слог виден только на полосе в окне IME.
+            ShowWindowForHangulStrip();
         } else if (!pref_show_default_onscreen_keyboard
                 && wordPredictor != null
                 && IsInputMode()
@@ -505,7 +508,7 @@ public class K12KbIME extends InputMethodServiceCoreCustomizable implements Keyb
             // оставалась, и плагин поиска оставался выключенным по IsInputMode().
             // Без запроса Телеграм закрывает ввод сам, и плагин заряжается.
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                this.requestShowSelf(InputMethodManager.SHOW_IMPLICIT);
+                RequestShowSelfImplicit();
             }
         }
 
@@ -1063,6 +1066,7 @@ public class K12KbIME extends InputMethodServiceCoreCustomizable implements Keyb
         keyboardLayoutManager.ChangeLayout();
         DropFirstLetterShiftForHangul();
         UpdateHangulStripVisibility();
+        ShowWindowForHangulStrip();
         if(pref_show_toast) {
             ShowToast(keyboardLayoutManager.GetCurrentKeyboardLayout().KeyboardName);
         }
@@ -1079,6 +1083,7 @@ public class K12KbIME extends InputMethodServiceCoreCustomizable implements Keyb
         keyboardLayoutManager.ChangeLayoutBack();
         DropFirstLetterShiftForHangul();
         UpdateHangulStripVisibility();
+        ShowWindowForHangulStrip();
         if(pref_show_toast) {
             ShowToast(keyboardLayoutManager.GetCurrentKeyboardLayout().KeyboardName);
         }
@@ -1157,8 +1162,9 @@ public class K12KbIME extends InputMethodServiceCoreCustomizable implements Keyb
             // IsInputMode теперь не зависит от inputType: раньше в терминале с
             // TYPE_NULL управление уходило в else и клавиатура прятала сама себя
             // через requestHideSelf, хотя приложение её только что показало.
-            if (wordPredictor != null && IsInputMode()) {
-                // Hide swype-pad but keep IME window for prediction bar
+            // Окно держим и ради полосы хангыля: от предсказаний она не зависит.
+            if ((wordPredictor != null || HangulStripNeeded()) && IsInputMode()) {
+                // Hide swype-pad but keep IME window for prediction bar / Hangul strip
                 keyboardView.setOnTouchListener(null);
                 if (keyboardView.getVisibility() == View.VISIBLE) {
                     keyboardView.setVisibility(View.GONE);
@@ -1213,6 +1219,32 @@ public class K12KbIME extends InputMethodServiceCoreCustomizable implements Keyb
     /** Отложенное дело больше не нужно (сработала подстраховка по таймеру). */
     public void CancelWhenInputViewHidden() {
         afterInputViewHidden = null;
+    }
+
+    /**
+     * requestShowSelf(SHOW_IMPLICIT). Отдельный метод, потому что requestShowSelf финальный, а
+     * тестам нужно видеть, просила ли клавиатура окно.
+     */
+    protected void RequestShowSelfImplicit() {
+        this.requestShowSelf(InputMethodManager.SHOW_IMPLICIT);
+    }
+
+    /**
+     * Просит окно IME ради полосы хангыля, если она нужна, а экранной панели нет (с панелью окно
+     * просит её собственная ветка). Без панели и предсказаний K12KB окно сам не просит и на каждом
+     * обновлении вида отпускает его, а полоса живёт в этом окне: в терминале набираемый слог не
+     * было бы видно. hideRequested снимаем: окно снова наше, и HideKeyboard при уходе с корейской
+     * раскладки должен его отпустить, а не счесть уже отпущенным.
+     */
+    private void ShowWindowForHangulStrip() {
+        if (pref_show_default_onscreen_keyboard || !HangulStripNeeded())
+            return;
+        hideRequested = false;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            RequestShowSelfImplicit();
+        } else {
+            this.showWindow(false);
+        }
     }
 
     private boolean hideRequested = false;

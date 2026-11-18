@@ -172,9 +172,17 @@ public final class ImeHarness {
         ime.onCreateInputView();
     }
 
-    /** Text on the Hangul strip above the keyboard; "" when the strip is hidden. */
+    /**
+     * Text on the Hangul strip above the keyboard as the user sees it; "" when the strip is
+     * hidden or the IME window holding it is not on screen (see windowShown()).
+     */
     public String stripText() {
         return ime.hangulStripTextForTest();
+    }
+
+    /** The IME window is on screen: the IME's last window request was a show. */
+    public boolean windowShown() {
+        return ime.windowShownForTest();
     }
 
     // endregion

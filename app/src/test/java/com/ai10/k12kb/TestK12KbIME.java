@@ -17,6 +17,8 @@ public class TestK12KbIME extends K12KbIME {
 
     private InputConnection field;
     private EditorInfo editorInfo;
+    /** Window requests the IME made, in order: "show" or "hide". */
+    private final java.util.List<String> windowRequests = new java.util.ArrayList<>();
 
     /**
      * Robolectric keeps static fields from one test to the next but gives every test
@@ -52,6 +54,51 @@ public class TestK12KbIME extends K12KbIME {
         return field != null;
     }
 
+    // region IME window: recorded, then passed on to the framework (a no-op without a window token)
+
+    @Override
+    protected void RequestShowSelfImplicit() {
+        windowRequests.add("show");
+        super.RequestShowSelfImplicit();
+    }
+
+    @Override
+    public void showWindow(boolean showInput) {
+        windowRequests.add("show");
+        super.showWindow(showInput);
+    }
+
+    @Override
+    public void requestHideSelf(int flags) {
+        windowRequests.add("hide");
+        super.requestHideSelf(flags);
+    }
+
+    @Override
+    public void hideWindow() {
+        windowRequests.add("hide");
+        super.hideWindow();
+    }
+
+    /** Every show/hide request so far, oldest first. */
+    public java.util.List<String> windowRequestsForTest() {
+        return new java.util.ArrayList<>(windowRequests);
+    }
+
+    public void clearWindowRequestsForTest() {
+        windowRequests.clear();
+    }
+
+    /**
+     * The IME window is on screen: the IME's last request was a show. On the KEY2 nothing else
+     * shows it for us: with the hardware keyboard an app need not ask for the soft input at all.
+     */
+    public boolean windowShownForTest() {
+        return !windowRequests.isEmpty() && "show".equals(windowRequests.get(windowRequests.size() - 1));
+    }
+
+    // endregion
+
     public void ChangeLanguageForTest() {
         ChangeLanguage();
     }
@@ -76,9 +123,14 @@ public class TestK12KbIME extends K12KbIME {
         return hangulSession.isComposing();
     }
 
-    /** Text on the Hangul strip; "" when the strip is hidden or the input view was never built. */
+    /**
+     * Text on the Hangul strip as the user sees it: "" when the strip is hidden, the input view
+     * was never built, or the IME window that holds the strip is not on screen.
+     */
     public String hangulStripTextForTest() {
         if (hangulStrip == null || hangulStrip.getVisibility() != android.view.View.VISIBLE)
+            return "";
+        if (!windowShownForTest())
             return "";
         return hangulStrip.getText().toString();
     }

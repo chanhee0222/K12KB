@@ -177,6 +177,24 @@ public final class HangulSession {
         strip.show("");
     }
 
+    /**
+     * Отчёт редактора о курсоре (onUpdateSelection). Отчёты бывают запоздалыми, поэтому сам по себе
+     * отчёт ничего не меняет: он лишь повод сверить текущее состояние редактора.
+     */
+    public void onSelectionUpdate(int newSelStart, int newSelEnd, int composingStart, int composingEnd) {
+        if (terminal || !isComposing()) {
+            return;
+        }
+        if (composingStart != -1 && newSelStart == newSelEnd && newSelEnd == composingEnd) {
+            return;
+        }
+        if (editor.cursorRightAfter(composer.preeditText())) {
+            return; // отчёт устарел: курсор по-прежнему сразу за набираемым слогом
+        }
+        // Пользователь переставил курсор или приложение забрало текст; слог уже в редакторе.
+        finish();
+    }
+
     /** Забывает всё, ничего не пишет в редактор. */
     public void reset() {
         composer.reset();

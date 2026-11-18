@@ -138,7 +138,31 @@ public final class HangulSessionTest {
         s.finish(); assertFalse(s.isComposing());
     }
 
+    @Test public void undoAfterCommitInComposingMode() {
+        typeJamo(s, "ㅎㅏㄴㅏ"); assertEquals("하[나]|", ed.shown());
+        assertTrue(s.undoLastJamo()); assertEquals("[한]|", ed.shown());
+    }
+
+    @Test public void backspaceAfterCommitInComposingMode() {
+        typeJamo(s, "ㅎㅏㄴㅏ");
+        assertTrue(s.backspace()); assertEquals("하[ㄴ]|", ed.shown());
+    }
+
     // --- terminal mode ---
+
+    @Test public void terminalUndoAfterSyllableBreakLeavesStripOnPreviousSyllable() {
+        goTerminal();
+        typeJamo(s, "ㅎㅏㄴㅏ"); assertEquals("하나", strip.last);
+        assertTrue(s.undoLastJamo());
+        assertEquals("한", strip.last); assertEquals("", ed.text()); assertTrue(ed.calls.isEmpty());
+    }
+
+    @Test public void terminalBackspaceAfterSyllableBreakCommitsEarlierSyllable() {
+        goTerminal();
+        typeJamo(s, "ㅎㅏㄴㅏ");
+        assertTrue(s.backspace());
+        assertEquals("하", ed.text()); assertEquals("ㄴ", strip.last);
+    }
 
     @Test public void terminalShowsSyllableOnStrip() {
         goTerminal();

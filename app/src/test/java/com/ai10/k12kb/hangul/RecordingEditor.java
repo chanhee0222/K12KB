@@ -39,8 +39,8 @@ public final class RecordingEditor implements HangulSession.Editor {
     }
 
     /**
-     * Текст с метками: составляемая область в [ ], курсор как |, выделение в &lt; &gt;
-     * (курсор | стоит после него). Пример: "한국[어]|".
+     * Текст с метками, как в FakeTextField: составляемая область в [ ], курсор |, выделение |abc|.
+     * Пример: "한국[어]|".
      */
     public String shown() {
         StringBuilder sb = new StringBuilder();
@@ -48,14 +48,11 @@ public final class RecordingEditor implements HangulSession.Editor {
             if (i == compEnd) {
                 sb.append(']');
             }
-            if (selStart != selEnd && i == selEnd) {
-                sb.append('>');
-            }
-            if (i == selEnd) {
+            if (i == selStart) {
                 sb.append('|');
             }
-            if (selStart != selEnd && i == selStart) {
-                sb.append('<');
+            if (i == selEnd && selEnd != selStart) {
+                sb.append('|');
             }
             if (i == compStart) {
                 sb.append('[');
@@ -147,6 +144,41 @@ public final class RecordingEditor implements HangulSession.Editor {
             return false;
         }
         return text.substring(selEnd - s.length(), selEnd).equals(s);
+    }
+
+    /** Значения, которые настоящий редактор сообщил бы в onUpdateSelection: selStart, selEnd, compStart, compEnd. */
+    public int[] report() {
+        return new int[] {selStart, selEnd, compStart, compEnd};
+    }
+
+    /** Приложение (или сам IME мимо сеанса) вставляет текст в позицию курсора; составление при этом кончается. */
+    public void commitExternally(String s) {
+        text.replace(selStart, selEnd, s);
+        selStart = selStart + s.length();
+        selEnd = selStart;
+        compStart = -1;
+        compEnd = -1;
+    }
+
+    /** Приложение опустошает поле. */
+    public void clearExternally() {
+        text.setLength(0);
+        selStart = 0;
+        selEnd = 0;
+        compStart = -1;
+        compEnd = -1;
+    }
+
+    /** Пользователь ставит курсор в позицию; составляемая область остаётся как была. */
+    public void moveCursorExternally(int position) {
+        selStart = position;
+        selEnd = position;
+    }
+
+    /** Пользователь выделяет текст. */
+    public void selectExternally(int start, int end) {
+        selStart = start;
+        selEnd = end;
     }
 
     /** Заменяет составляемую область (иначе выделение, иначе точку курсора) текстом; курсор после него. */

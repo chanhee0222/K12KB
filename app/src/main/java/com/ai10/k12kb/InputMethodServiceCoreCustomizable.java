@@ -96,7 +96,7 @@ public abstract class InputMethodServiceCoreCustomizable extends InputMethodServ
     @Override
     public void onCreate() {
         super.onCreate();
-        hangulSession = new HangulSession(new InputConnectionHangulEditor(this::RawInputConnection), text -> { });
+        hangulSession = new HangulSession(new InputConnectionHangulEditor(this::RawInputConnection), this::ShowHangulPreedit);
     }
 
     /**
@@ -2560,6 +2560,10 @@ public abstract class InputMethodServiceCoreCustomizable extends InputMethodServ
     }
 
     private void DeleteLastSymbol() {
+        // В хангыле это откат последней джамо (долгое нажатие заменяет то, что ввело нажатие),
+        // а не удаление символа: 갈+ㅂ=갋 откатывается в 갈. Нет истории отката — как раньше.
+        if (IsHangulActive() && hangulSession.undoLastJamo())
+            return;
         InputConnection inputConnection = getCurrentInputConnection();
         if(inputConnection!=null) {
             inputConnection.deleteSurroundingText(1, 0);

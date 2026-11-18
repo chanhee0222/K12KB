@@ -1,11 +1,17 @@
 package com.ai10.k12kb;
 
+import android.os.Looper;
 import android.util.Log;
+import android.util.TypedValue;
+import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputConnection;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.core.content.ContextCompat;
 
 import com.ai10.k12kb.prediction.LanguagePacks;
 import com.ai10.k12kb.prediction.SuggestionBar;
@@ -407,6 +413,62 @@ public abstract class InputMethodServiceCorePrediction extends InputMethodServic
         return (code != null && !code.isEmpty()) ? code : LanguagePacks.BUILTIN_LANGUAGE;
     }
 
+    // --- Hangul strip: the syllable in progress in a terminal ---
+
+    /**
+     * Полоса над панелью предсказаний: набираемый в терминале слог (и закрытый текст, который
+     * ещё можно откатить). Создаётся вместе с панелью ввода, даже при выключенных предсказаниях;
+     * скрыта, пока показывать нечего. Только текст, нажимать нечего.
+     */
+    protected TextView hangulStrip;
+    /** Последний текст для полосы: сеанс может прислать его раньше, чем создана панель ввода. */
+    private String hangulPreedit = "";
+
+    /** Показывает text на полосе, "" прячет её. Можно звать с любого потока и до создания панели. */
+    protected void ShowHangulPreedit(String text) {
+        final String value = text == null ? "" : text;
+        if (Looper.myLooper() != Looper.getMainLooper()) {
+            uiHandler.post(() -> ShowHangulPreedit(value));
+            return;
+        }
+        hangulPreedit = value;
+        applyHangulPreedit();
+    }
+
+    private void applyHangulPreedit() {
+        if (hangulStrip == null) return;
+        hangulStrip.setText(hangulPreedit);
+        hangulStrip.setVisibility(hangulPreedit.isEmpty() ? View.GONE : View.VISIBLE);
+    }
+
+    /** Размеры и цвета как у SuggestionBar: та же высота (с полосками-разделителями), шрифт, фон. */
+    private TextView createHangulStrip() {
+        int heightDp = k12KbSettings.GetIntValue(k12KbSettings.APP_PREFERENCES_15_PREDICTION_HEIGHT);
+        if (heightDp < 10) heightDp = 36;
+        final int dividerDp = 2; // SuggestionBar.DIVIDER_HEIGHT_DP, сверху и снизу
+        float fontSizeSp = Math.max(14, Math.min(40, heightDp * 0.70f));
+
+        TextView strip = new TextView(this);
+        strip.setLayoutParams(new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(heightDp + dividerDp * 2)));
+        strip.setGravity(Gravity.CENTER_VERTICAL | Gravity.START);
+        strip.setPadding(dp(12), dp(dividerDp), dp(12), dp(dividerDp));
+        strip.setIncludeFontPadding(false);
+        strip.setSingleLine(true);
+        strip.setTextSize(TypedValue.COMPLEX_UNIT_SP, fontSizeSp);
+        strip.setTextColor(ContextCompat.getColor(this, R.color.keyboard_text_color));
+        strip.setBackgroundColor(ContextCompat.getColor(this, R.color.keyboard_background_color));
+        strip.setClickable(false);
+        strip.setFocusable(false);
+        strip.setVisibility(View.GONE);
+        return strip;
+    }
+
+    private int dp(int value) {
+        return (int) TypedValue.applyDimension(
+                TypedValue.COMPLEX_UNIT_DIP, value, getResources().getDisplayMetrics());
+    }
+
     // --- Suggestion bar visibility (replaces framework setCandidatesViewShown) ---
 
     protected void setSuggestionBarShown(boolean shown) {
@@ -416,7 +478,8 @@ public abstract class InputMethodServiceCorePrediction extends InputMethodServic
     }
 
     /**
-     * Wraps keyboardView and suggestionBar into a single input view container.
+     * Wraps the Hangul strip, suggestionBar and keyboardView (top to bottom) into a single
+     * input view container. The strip is there even when prediction is off.
      * Call this from onCreateInputView() instead of returning keyboardView alone.
      */
     protected View createInputViewWithSuggestions(View keyboardView) {
@@ -425,6 +488,14 @@ public abstract class InputMethodServiceCorePrediction extends InputMethodServic
         container.setLayoutParams(new ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        if (hangulStrip == null) {
+            hangulStrip = createHangulStrip();
+        } else if (hangulStrip.getParent() != null) {
+            ((ViewGroup) hangulStrip.getParent()).removeView(hangulStrip);
+        }
+        container.addView(hangulStrip);
+        applyHangulPreedit();
 
         if (suggestionBar != null) {
             if (suggestionBar.getParent() != null) {

@@ -76,6 +76,22 @@ public class TestK12KbIME extends K12KbIME {
         return hangulSession.isComposing();
     }
 
+    /** Text on the Hangul strip; "" when the strip is hidden or the input view was never built. */
+    public String hangulStripTextForTest() {
+        if (hangulStrip == null || hangulStrip.getVisibility() != android.view.View.VISIBLE)
+            return "";
+        return hangulStrip.getText().toString();
+    }
+
+    /** The strip view itself (null before the input view is built). */
+    public android.widget.TextView hangulStripForTest() {
+        return hangulStrip;
+    }
+
+    public void showHangulPreeditForTest(String text) {
+        ShowHangulPreedit(text);
+    }
+
     /** What the active layout sends for a key; builds the (private-constructor) KeyPressData by reflection. */
     public int keyToCharCodeForTest(int keyCode, boolean alt, boolean shift) {
         try {

@@ -40,6 +40,7 @@ import android.view.textservice.SuggestionsInfo;
 import android.widget.Toast;
 import com.google.android.voiceime.VoiceRecognitionTrigger;
 import com.ai10.k12kb.input.CallStateCallback;
+import com.ai10.k12kb.hangul.EditorKind;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -426,6 +427,8 @@ public class K12KbIME extends InputMethodServiceCoreCustomizable implements Keyb
             return;
         // Новое поле: слог из старого сюда не пишем (его дописал onFinishInput, пока поле было живо).
         hangulSession.reset();
+        // В терминале слог набирается на полосе над клавиатурой: отправленное туда не забрать.
+        hangulSession.setTerminalMode(EditorKind.isTerminal(editorInfo.inputType, editorInfo.initialSelStart));
         DropFirstLetterShiftForHangul();
         // Reset session-level prediction bar visibility on new input
         isPackageChangedInsideSingleEvent = false;

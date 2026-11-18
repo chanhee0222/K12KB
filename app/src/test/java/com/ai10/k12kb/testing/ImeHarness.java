@@ -7,6 +7,7 @@ import android.os.SystemClock;
 import android.text.InputType;
 import android.view.KeyEvent;
 import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputConnection;
 
 import com.ai10.k12kb.K12KbSettings;
 import com.ai10.k12kb.TestK12KbIME;
@@ -46,10 +47,24 @@ public final class ImeHarness {
     private static final int META_ALT_LEFT = KeyEvent.META_ALT_ON | KeyEvent.META_ALT_LEFT_ON;
 
     private final TestK12KbIME ime;
+    /** The focused text field, or null (no focus, or a terminal has it). */
     private FakeTextField field;
+    /** Whatever has focus: the text field or a terminal. Keys the IME declines go here. */
+    private InputConnection focused;
+    private boolean inputViewCreated;
 
     private ImeHarness(TestK12KbIME ime) {
         this.ime = ime;
+    }
+
+    /**
+     * Writes a K12KB setting before {@link #key2} boots the IME, which reads settings once at boot.
+     * E.g. prefBeforeBoot("long_press_alt", false) (K12KbSettings.APP_PREFERENCES_5_LONG_PRESS_ALT).
+     */
+    public static void prefBeforeBoot(String name, boolean value) {
+        RuntimeEnvironment.getApplication()
+                .getSharedPreferences(K12KbSettings.APP_PREFERENCES, Context.MODE_PRIVATE)
+                .edit().putBoolean(name, value).commit();
     }
 
     /**
@@ -109,16 +124,45 @@ public final class ImeHarness {
      * and input, then start input and the input view for the new one.
      */
     public FakeTextField focus(EditorInfo info) {
-        if (field != null) {
-            ime.onFinishInputView(true);
-            ime.onFinishInput();
-        }
-        field = new FakeTextField(ime::onUpdateSelection);
-        ime.attachField(field, info);
-        ime.onStartInput(info, false);
-        ime.onStartInputView(info, false);
-        ShadowLooper.idleMainLooper();
-        return field;
+        FakeTextField newField = new FakeTextField(ime::onUpdateSelection);
+        attach(newField, info);
+        field = newField;
+        return newField;
+    }
+
+    /**
+     * Focuses a new terminal (Termux's TerminalView) of the given inputType, e.g. 0 (TYPE_NULL)
+     * or 0x80090 (Termux's "enforce char-based input"). It reports no cursor: initialSelStart -1.
+     * Like TerminalView it sets IME_FLAG_NO_FULLSCREEN, which is how K12KB tells a TYPE_NULL
+     * terminal from a window with no editor (InputMethodServiceCoreGesture.IsInputMode).
+     */
+    public FakeTermux focusTerminal(int inputType) {
+        EditorInfo info = new EditorInfo();
+        info.inputType = inputType;
+        info.imeOptions = EditorInfo.IME_FLAG_NO_FULLSCREEN;
+        info.initialSelStart = -1;
+        info.initialSelEnd = -1;
+        info.packageName = "com.termux";
+        info.fieldId = 2;
+        FakeTermux terminal = new FakeTermux();
+        attach(terminal, info);
+        field = null;
+        return terminal;
+    }
+
+    /**
+     * Builds the IME's input view (keyboard, suggestion bar, Hangul strip) once, as the framework
+     * does the first time the window is shown. focus() calls it; a test may call it earlier.
+     */
+    public void createInputView() {
+        if (inputViewCreated) return;
+        inputViewCreated = true;
+        ime.onCreateInputView();
+    }
+
+    /** Text on the Hangul strip above the keyboard; "" when the strip is hidden. */
+    public String stripText() {
+        return ime.hangulStripTextForTest();
     }
 
     // endregion
@@ -247,9 +291,27 @@ public final class ImeHarness {
         boolean consumed = event.getAction() == KeyEvent.ACTION_DOWN
                 ? ime.onKeyDown(event.getKeyCode(), event)
                 : ime.onKeyUp(event.getKeyCode(), event);
-        if (!consumed && field != null) {
-            field.sendKeyEvent(event);
+        if (!consumed && focused != null) {
+            focused.sendKeyEvent(event);
         }
+        ShadowLooper.idleMainLooper();
+    }
+
+    /**
+     * Moves focus to a new editor in the order InputMethodService.doStartInput uses: finish the
+     * previous editor's input view and input, start input, show the window (creating the input
+     * view the first time), then start the input view.
+     */
+    private void attach(InputConnection editor, EditorInfo info) {
+        if (focused != null) {
+            ime.onFinishInputView(true);
+            ime.onFinishInput();
+        }
+        focused = editor;
+        ime.attachField(editor, info);
+        ime.onStartInput(info, false);
+        createInputView();
+        ime.onStartInputView(info, false);
         ShadowLooper.idleMainLooper();
     }
 

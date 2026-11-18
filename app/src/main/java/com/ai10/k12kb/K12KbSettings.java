@@ -59,7 +59,7 @@ public class K12KbSettings {
 
     public final boolean KEYBOARD_LAYOUT_IS_ENABLED_DEFAULT = false;
     public final boolean JS_PATCH_IS_ENABLED_DEFAULT = false;
-    private static K12KbSettings _instance;
+    static K12KbSettings _instance;
     SharedPreferences _mSettings;
 
     public static K12KbSettings Get(SharedPreferences mSettings) {

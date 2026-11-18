@@ -105,9 +105,9 @@ public class K12KbIME extends InputMethodServiceCoreCustomizable implements Keyb
     private String deviceFullMODEL;
 
 
-    private boolean isNotStarted = true;
+    boolean isNotStarted = true;
 
-    private String onCreateError = null;
+    String onCreateError = null;
 
     @RequiresApi(api = Build.VERSION_CODES.O)
     @SuppressLint({"ClickableViewAccessibility", "InflateParams"})

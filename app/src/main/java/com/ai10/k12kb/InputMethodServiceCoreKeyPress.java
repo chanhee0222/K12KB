@@ -130,6 +130,22 @@ public class InputMethodServiceCoreKeyPress extends InputMethodService {
         TIME_SHORT_PRESS = CoreKeyboardSettings.TimeShortPress;
     }
 
+    /**
+     * Соединение с полем ввода в том виде, в каком его отдала система.
+     *
+     * Вся клавиатура берёт соединение через getCurrentInputConnection(), а
+     * этот метод — единственное место, где оно приходит снаружи. Тесты
+     * подставляют здесь своё поле.
+     */
+    protected InputConnection RawInputConnection() {
+        return super.getCurrentInputConnection();
+    }
+
+    @Override
+    public InputConnection getCurrentInputConnection() {
+        return RawInputConnection();
+    }
+
     //region KEY_DOWN_UP
 
     //Если через него отправлять навигационные и прочие команды, не будет активироваться выделение виджета на рабочем столе

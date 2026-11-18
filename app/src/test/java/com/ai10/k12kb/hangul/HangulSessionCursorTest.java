@@ -27,7 +27,7 @@ public final class HangulSessionCursorTest {
         s.onSelectionUpdate(report[0], report[1], report[2], report[3]);
     }
 
-    // Key before report: the field changed, the IME has not been told yet.
+    // Клавиша раньше отчёта: поле уже изменилось, а IME об этом ещё не сообщили.
     @Test public void clearedExternallyWithoutReportStartsFresh() {
         typeJamo(s, "ㅎㅏ"); ed.clearExternally(); typeJamo(s, "ㄴ");
         assertEquals("[ㄴ]|", ed.shown());
@@ -63,10 +63,27 @@ public final class HangulSessionCursorTest {
 
     @Test public void ownEchoesKeepComposing() { typeJamo(s, "ㅎㅏ"); feed(ed.report()); typeJamo(s, "ㄴ"); assertEquals("[한]|", ed.shown()); }
 
+    // Отчёт, согласный с набором (курсор свёрнут в конце составляемой области), редактор не читает.
+    @Test public void reportConsistentWithComposingDoesNotReadEditor() {
+        typeJamo(s, "ㅎㅏ");
+        int before = ed.cursorChecks;
+        feed(ed.report());
+        assertEquals(before, ed.cursorChecks);
+        assertTrue(s.isComposing());
+    }
+
+    // Любой другой отчёт — повод сверить редактор вживую.
+    @Test public void otherReportReadsEditor() {
+        typeJamo(s, "ㅎㅏ");
+        int before = ed.cursorChecks;
+        s.onSelectionUpdate(1, 1, -1, -1);
+        assertEquals(before + 1, ed.cursorChecks);
+    }
+
     @Test public void lateEchoOfForeignWriteIsIgnored() {
-        ed.commitExternally(" ");                    // the space, written by the IME outside the session
+        ed.commitExternally(" ");                    // пробел, записанный IME мимо сеанса
         typeJamo(s, "ㄴ");
-        s.onSelectionUpdate(1, 1, -1, -1);           // the space's report lands late
+        s.onSelectionUpdate(1, 1, -1, -1);           // отчёт о пробеле приходит с опозданием
         typeJamo(s, "ㅏ");
         assertEquals(" [나]|", ed.shown());
     }
@@ -74,22 +91,24 @@ public final class HangulSessionCursorTest {
     @Test public void staleReportsOfEarlierSyllableAreIgnored() {
         typeJamo(s, "ㅎㅏㄴ"); int[] old = ed.report(); s.finish(); ed.commitExternally(" ");
         typeJamo(s, "ㄱㅏ");
-        feed(old); s.onSelectionUpdate(2, 2, -1, -1);   // late: the old syllable, then the space
+        feed(old); s.onSelectionUpdate(2, 2, -1, -1);   // запоздалые: о старом слоге, потом о пробеле
         typeJamo(s, "ㄴ");
         assertEquals("한 [간]|", ed.shown());
     }
 
     @Test public void userMovedCursorFinishes() {
         typeJamo(s, "ㅎㅏ"); ed.moveCursorExternally(0);
-        s.onSelectionUpdate(0, 0, 0, 1);             // tap before the syllable
+        s.onSelectionUpdate(0, 0, 0, 1);             // касание перед слогом
         assertFalse(s.isComposing()); assertTrue(ed.calls.contains("finish"));
+        assertEquals("하", ed.text());                // слог остаётся в поле как есть
+        assertEquals("|하", ed.shown());
     }
 
     @Test public void staleRangeReportIsIgnored() { typeJamo(s, "ㅎㅏ"); s.onSelectionUpdate(0, 1, -1, -1); assertTrue(s.isComposing()); }
 
     @Test public void appDroppedCompositionStartsFresh() {
         typeJamo(s, "ㅎㅏ"); feed(ed.report());
-        ed.clearExternally();  s.onSelectionUpdate(0, 0, -1, -1);   // chat "send" emptied the field
+        ed.clearExternally();  s.onSelectionUpdate(0, 0, -1, -1);   // «Отправить» в чате опустошило поле
         typeJamo(s, "ㄴ");
         assertEquals("[ㄴ]|", ed.shown());
     }

@@ -16,6 +16,8 @@ public final class RecordingEditor implements HangulSession.Editor {
     public boolean terminal;
     /** Сколько раз открывали пакет. */
     public int batchesOpened;
+    /** Сколько раз сеанс читал редактор вживую (cursorRightAfter). */
+    public int cursorChecks;
 
     private final StringBuilder text = new StringBuilder();
     private int selStart;
@@ -140,6 +142,7 @@ public final class RecordingEditor implements HangulSession.Editor {
 
     @Override
     public boolean cursorRightAfter(String s) {
+        cursorChecks++;
         if (selStart != selEnd || selEnd < s.length()) {
             return false;
         }

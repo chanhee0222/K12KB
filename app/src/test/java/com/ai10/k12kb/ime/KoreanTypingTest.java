@@ -3,6 +3,7 @@ package com.ai10.k12kb.ime;
 import static android.view.KeyEvent.KEYCODE_DEL;
 import static android.view.KeyEvent.KEYCODE_DPAD_LEFT;
 import static android.view.KeyEvent.KEYCODE_R;
+import static android.view.KeyEvent.KEYCODE_SHIFT_LEFT;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -97,6 +98,38 @@ public class KoreanTypingTest {
         f = h.focusText(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
         h.type("qkq");
         assertEquals("[밥]|", f.shown());
+    }
+
+    /**
+     * The field starts on English, whose start-of-input auto-cap sets first-letter shift; switching to
+     * Korean must drop it. Reuses this test's IME: back to English first, then focus the field.
+     */
+    @Test
+    public void englishAutoCapDoesNotLeakIntoKorean() {
+        h.languageKey();
+        f = h.focusText(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+        h.languageKey();
+        assertTrue(h.ime().IsHangulActive());
+        h.type("qkq");
+        assertEquals("[밥]|", f.shown());
+    }
+
+    /**
+     * A manual one-shot Shift (Left Shift short press: ActionChangeFirstLetterShiftMode) must survive
+     * cursor reports that arrive after it. On a device reports are asynchronous, so the reports for
+     * ㅇ and ㅣ can land after the Shift tap; here they are held back and delivered after it.
+     */
+    @Test
+    public void manualShiftSurvivesCursorReports() {
+        f = h.focusText(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+        f.deferReports(true);
+        h.type("dl");
+        h.tap(KEYCODE_SHIFT_LEFT);
+        f.deliverReports();
+        f.deferReports(false);
+        h.type("t");
+        h.type("ek");
+        assertEquals("있[다]|", f.shown());
     }
 
     @Test

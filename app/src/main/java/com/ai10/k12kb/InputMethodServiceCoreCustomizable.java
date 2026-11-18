@@ -99,6 +99,17 @@ public abstract class InputMethodServiceCoreCustomizable extends InputMethodServ
         hangulSession = new HangulSession(new InputConnectionHangulEditor(this::RawInputConnection), text -> { });
     }
 
+    /**
+     * Раскладка хангыля только что стала активной: снимает Shift первой буквы, оставшийся от
+     * прежней раскладки (её автозаглавная), иначе первая джамо вышла бы напряжённой.
+     */
+    protected void DropFirstLetterShiftForHangul() {
+        if (IsHangulActive() && metaFixedModeFirstLetterUpper) {
+            metaFixedModeFirstLetterUpper = false;
+            UpdateKeyboardModeVisualization();
+        }
+    }
+
     /** Дописывает набираемый слог, если он есть; иначе ничего не делает. */
     protected void FinishHangulComposing() {
         if (hangulSession != null && hangulSession.isComposing()) {
@@ -2437,14 +2448,11 @@ public abstract class InputMethodServiceCoreCustomizable extends InputMethodServ
         //if(!isInputViewShown())
         //    return;
 
-        // У хангыля нет заглавных, а Shift дал бы напряжённую согласную (ㅂ -> ㅃ).
-        if (IsHangulActive()) {
-            if (metaFixedModeFirstLetterUpper) {
-                metaFixedModeFirstLetterUpper = false;
-                return true;
-            }
+        // У хангыля нет заглавных, а Shift дал бы напряжённую согласную (ㅂ -> ㅃ): сами не ставим.
+        // Поставленный вручную одноразовый Shift не трогаем: отчёты курсора приходят с опозданием и
+        // стёрли бы нажатие. Оставшийся от другой раскладки снимает DropFirstLetterShiftForHangul.
+        if (IsHangulActive())
             return false;
-        }
 
         if(!pref_auto_capitalization)
             return false;

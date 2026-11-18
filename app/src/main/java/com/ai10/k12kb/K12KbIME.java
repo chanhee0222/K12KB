@@ -426,6 +426,7 @@ public class K12KbIME extends InputMethodServiceCoreCustomizable implements Keyb
             return;
         // Новое поле: слог из старого сюда не пишем (его дописал onFinishInput, пока поле было живо).
         hangulSession.reset();
+        DropFirstLetterShiftForHangul();
         // Reset session-level prediction bar visibility on new input
         isPackageChangedInsideSingleEvent = false;
         // Обрабатываем переход между приложениями
@@ -1038,6 +1039,7 @@ public class K12KbIME extends InputMethodServiceCoreCustomizable implements Keyb
     protected void ChangeLanguage() {
         FinishHangulComposing();
         keyboardLayoutManager.ChangeLayout();
+        DropFirstLetterShiftForHangul();
         if(pref_show_toast) {
             ShowToast(keyboardLayoutManager.GetCurrentKeyboardLayout().KeyboardName);
         }
@@ -1052,6 +1054,7 @@ public class K12KbIME extends InputMethodServiceCoreCustomizable implements Keyb
     protected void ChangeLanguageBack() {
         FinishHangulComposing();
         keyboardLayoutManager.ChangeLayoutBack();
+        DropFirstLetterShiftForHangul();
         if(pref_show_toast) {
             ShowToast(keyboardLayoutManager.GetCurrentKeyboardLayout().KeyboardName);
         }

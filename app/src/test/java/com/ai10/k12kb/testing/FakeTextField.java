@@ -94,6 +94,12 @@ public final class FakeTextField implements InputConnection {
         queueReport(true);
     }
 
+    /** The user moves the cursor (tap, gesture): the composing span stays where it is, a report is queued. */
+    public void setSelectionByUser(int cursor) {
+        selStart = selEnd = clamp(cursor);
+        queueReport(true);
+    }
+
     /** While deferred, reports pile up until {@link #deliverReports()}. */
     public void deferReports(boolean defer) {
         deferred = defer;

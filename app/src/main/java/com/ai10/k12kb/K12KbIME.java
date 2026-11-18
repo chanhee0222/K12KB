@@ -516,6 +516,8 @@ public class K12KbIME extends InputMethodServiceCoreCustomizable implements Keyb
         super.onFinishInput();
 
         try {
+            // Ctrl, зажатый клавишей (например, $ с патчем 13), не должен залипнуть в новом поле
+            ReleaseHoldCtrl();
             OnFinishInput.Process(null, null);
             if (needUpdateVisualInsideSingleEvent)
                 UpdateKeyboardModeVisualization();

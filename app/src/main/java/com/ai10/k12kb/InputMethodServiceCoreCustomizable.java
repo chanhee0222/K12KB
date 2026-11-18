@@ -733,6 +733,7 @@ public abstract class InputMethodServiceCoreCustomizable extends InputMethodServ
         Methods.put("MetaIsActionBeforeMeta", InitializeMethod3((Object o) -> MetaIsActionBeforeMeta(), Object.class));
         Methods.put("MetaIsPackageChanged", InitializeMethod3((Object o) -> MetaIsPackageChanged(), Object.class));
         Methods.put("MetaIsAltMode", InitializeMethod3((Object o) -> MetaIsAltMode(), Object.class));
+        Methods.put("MetaWasAltModeAtKeyDown", InitializeMethod3((Object o) -> MetaWasAltModeAtKeyDown(), Object.class));
         Methods.put("MetaIsAltPressed", InitializeMethod3((Object o) -> MetaIsAltPressed(), Object.class));
         Methods.put("MetaIsCtrlPressed", InitializeMethod3((Object o) -> MetaIsCtrlPressed(), Object.class));
         Methods.put("MetaIsShiftMode", InitializeMethod3((Object o) -> MetaIsShiftMode(), Object.class));
@@ -1312,6 +1313,22 @@ public abstract class InputMethodServiceCoreCustomizable extends InputMethodServ
                 keyPressData.BaseKeyEvent.getEventTime(),
                 KeyEvent.ACTION_UP, KeyEvent.KEYCODE_CTRL_LEFT, 0, meta));
         return true;
+    }
+
+    /**
+     * Снимает удержание Ctrl, если оно включено, и отпускает Ctrl в поле (если соединение ещё
+     * есть). Зовётся при уходе из поля: клавишу, держащую Ctrl, могли отпустить уже в другом окне.
+     */
+    protected void ReleaseHoldCtrl() {
+        if (!metaHoldCtrl)
+            return;
+        metaHoldCtrl = false;
+        InputConnection ic = getCurrentInputConnection();
+        if (ic == null)
+            return;
+        int meta = KeyEvent.META_CTRL_ON | KeyEvent.META_CTRL_LEFT_ON;
+        long now = SystemClock.uptimeMillis();
+        ic.sendKeyEvent(new KeyEvent(now, now, KeyEvent.ACTION_UP, KeyEvent.KEYCODE_CTRL_LEFT, 0, meta));
     }
 
     //endregion
@@ -2153,6 +2170,16 @@ public abstract class InputMethodServiceCoreCustomizable extends InputMethodServ
 
     public boolean MetaIsAltMode() {
         return metaFixedModeFirstSymbolAlt || metaFixedModeAllSymbolsAlt || metaHoldAlt;
+    }
+
+    /** Режим Alt был включён, когда текущую клавишу нажали (до её действий). */
+    public boolean MetaWasAltModeAtKeyDown() {
+        return altModeAtKeyDown;
+    }
+
+    @Override
+    protected boolean IsAltModeForKeyDownRecord() {
+        return MetaIsAltMode();
     }
 
     public boolean MetaIsAltPressed() {

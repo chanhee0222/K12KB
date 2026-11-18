@@ -188,9 +188,23 @@ public class InputMethodServiceCoreKeyPress extends InputMethodService {
                 && IsSameKey(keyPressData1, keyPressData2.KeyCode, keyPressData2.ScanCode);
     }
 
+    /**
+     * Был ли режим Alt включён в момент последнего нажатия клавиши (repeat 0), до любых её
+     * действий: одно нажатие (one-shot) Alt гасится уже самим нажатием, поэтому позже его не
+     * узнать. Условие MetaWasAltModeAtKeyDown.
+     */
+    protected boolean altModeAtKeyDown = false;
+
+    /** Режим Alt сейчас; знает о нём только InputMethodServiceCoreCustomizable. */
+    protected boolean IsAltModeForKeyDownRecord() {
+        return false;
+    }
+
     protected boolean ProcessCoreOnKeyDown(int keyCode, KeyEvent keyEvent, SparseArray<KeyProcessingMode> keyProcessingModeList1) {
         int scanCode = keyEvent.getScanCode();
         int repeatCount1 = keyEvent.getRepeatCount();
+        if (repeatCount1 == 0)
+            altModeAtKeyDown = IsAltModeForKeyDownRecord();
         long eventTime = keyEvent.getEventTime();
         long keyDownTime = keyEvent.getDownTime();
 
@@ -312,6 +326,11 @@ public class InputMethodServiceCoreKeyPress extends InputMethodService {
                 //return true;
             } else { // Count > 0
                 KeyPressData keyPressData1 = FindAtKeyDownList(keyCode, scanCode);
+                if (keyPressData1 == null) {
+                    // Нет записи о нажатии (repeat 0) этой клавиши: не падаем на повторе
+                    Log.e(TAG2, "keyPressData1 == null at IsMetaShortDoubleHoldPlusButtonPressMode");
+                    return true;
+                }
                 if (eventTime - keyDownTime > TIME_SHORT_PRESS) {
 
                     if (keyPressData1.HoldBeginTime == 0) {

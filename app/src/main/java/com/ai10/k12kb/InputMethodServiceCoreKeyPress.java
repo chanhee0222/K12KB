@@ -10,6 +10,7 @@ import androidx.annotation.RequiresApi;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.inputmethod.InputConnection;
+import com.ai10.k12kb.hangul.FinishingInputConnection;
 import com.fasterxml.jackson.core.type.TypeReference;
 
 import java.util.ArrayList;
@@ -141,9 +142,29 @@ public class InputMethodServiceCoreKeyPress extends InputMethodService {
         return super.getCurrentInputConnection();
     }
 
+    /** Обёртка над последним сырым соединением; новая создаётся только при смене соединения. */
+    private FinishingInputConnection finishingConnection;
+
+    /**
+     * Сырое соединение в обёртке, которая перед любой правкой текста или курсора
+     * вызывает {@link #FinishComposingBeforeForeignEdit()}. Через этот метод идут все
+     * правки клавиатуры, кроме записей самого сеанса хангыля (тот пишет в RawInputConnection()).
+     */
     @Override
     public InputConnection getCurrentInputConnection() {
-        return RawInputConnection();
+        InputConnection raw = RawInputConnection();
+        if (raw == null)
+            return null;
+        FinishingInputConnection wrapper = finishingConnection;
+        if (wrapper == null || !wrapper.wraps(raw)) {
+            wrapper = new FinishingInputConnection(raw, this::FinishComposingBeforeForeignEdit);
+            finishingConnection = wrapper;
+        }
+        return wrapper;
+    }
+
+    /** Вызывается перед каждой правкой через getCurrentInputConnection(); здесь ничего не делает. */
+    protected void FinishComposingBeforeForeignEdit() {
     }
 
     //region KEY_DOWN_UP

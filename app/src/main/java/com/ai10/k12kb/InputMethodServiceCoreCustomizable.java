@@ -117,6 +117,12 @@ public abstract class InputMethodServiceCoreCustomizable extends InputMethodServ
         }
     }
 
+    /** Чужая правка поля (жест, вставка, Ctrl-сочетание, Enter…) сначала дописывает слог. */
+    @Override
+    protected void FinishComposingBeforeForeignEdit() {
+        FinishHangulComposing();
+    }
+
     //region KEYBOARD_MECHANICS LOAD
 
     KeyboardMechanics KeyboardMechanics;

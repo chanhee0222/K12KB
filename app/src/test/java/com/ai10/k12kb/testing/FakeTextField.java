@@ -1,5 +1,8 @@
 package com.ai10.k12kb.testing;
 
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -11,6 +14,8 @@ import android.view.inputmethod.ExtractedText;
 import android.view.inputmethod.ExtractedTextRequest;
 import android.view.inputmethod.InputConnection;
 import android.view.inputmethod.InputContentInfo;
+
+import org.robolectric.RuntimeEnvironment;
 
 import java.util.ArrayDeque;
 import java.util.Arrays;
@@ -230,6 +235,12 @@ public final class FakeTextField implements InputConnection {
     public boolean sendKeyEvent(KeyEvent event) {
         if (event.getAction() != KeyEvent.ACTION_DOWN) return true;
         beginEdit();
+        if (event.isCtrlPressed()) {
+            // Ctrl+V pastes the clipboard at the cursor, as EditText does; other shortcuts do nothing here.
+            if (event.getKeyCode() == KeyEvent.KEYCODE_V) replaceSelection(clipboardText());
+            endEdit();
+            return true;
+        }
         switch (event.getKeyCode()) {
             case KeyEvent.KEYCODE_DEL:
                 if (selStart != selEnd) {
@@ -354,6 +365,15 @@ public final class FakeTextField implements InputConnection {
                 : a + newCursorPosition;
         selStart = selEnd = clamp(cursor);
         return a;
+    }
+
+    private static CharSequence clipboardText() {
+        ClipboardManager clipboard = (ClipboardManager) RuntimeEnvironment.getApplication()
+                .getSystemService(Context.CLIPBOARD_SERVICE);
+        ClipData clip = clipboard.getPrimaryClip();
+        if (clip == null || clip.getItemCount() == 0) return "";
+        CharSequence text = clip.getItemAt(0).getText();
+        return text == null ? "" : text;
     }
 
     private void replaceSelection(CharSequence s) {

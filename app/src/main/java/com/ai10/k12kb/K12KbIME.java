@@ -586,6 +586,7 @@ public class K12KbIME extends InputMethodServiceCoreCustomizable implements Keyb
 
         if (TryHangulBackspace(keyCode, event))
             return true;
+        FinishHangulBeforeNonLetterKey(keyCode);
 
         if(
             !IsInputMode()
@@ -655,6 +656,22 @@ public class K12KbIME extends InputMethodServiceCoreCustomizable implements Keyb
             return false;
         hangulDelConsumed = hangulSession.backspace();
         return hangulDelConsumed;
+    }
+
+    /**
+     * Пока набирается слог, клавиша вне буквенной группы раскладки (D-pad, Tab, Enter, пробел…)
+     * сначала дописывает его: такую клавишу клавиатура может отдать приложению, и тогда ни шов по
+     * символу, ни обёртка соединения её не увидят. Буквы решает шов по символу; модификаторы и Del
+     * слог не трогают.
+     */
+    private void FinishHangulBeforeNonLetterKey(int keyCode) {
+        if (keyCode == KeyEvent.KEYCODE_DEL || KeyEvent.isModifierKey(keyCode))
+            return;
+        if (!IsHangulActive() || !hangulSession.isComposing())
+            return;
+        if (KeyboardLayoutManager.getCurKeyVariants(keyboardLayoutManager.GetCurrentKeyboardLayout(), keyCode) != null)
+            return;
+        hangulSession.finish();
     }
 
     private boolean IsNavModeExtraKeyTransparency(int keyCode) {

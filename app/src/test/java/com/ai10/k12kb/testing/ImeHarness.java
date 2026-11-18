@@ -1,5 +1,7 @@
 package com.ai10.k12kb.testing;
 
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.os.SystemClock;
 import android.text.InputType;
@@ -40,6 +42,8 @@ public final class ImeHarness {
     /** Pref name K12KB generates for a layout: KeyboardLayoutOptions.getPreferenceName(). */
     private static final String LAYOUT_PREF_PREFIX = "GENERATED_PREF_KEYBOARD_LAYOUT_";
     private static final int META_SHIFT_LEFT = KeyEvent.META_SHIFT_ON | KeyEvent.META_SHIFT_LEFT_ON;
+    private static final int META_CTRL_LEFT = KeyEvent.META_CTRL_ON | KeyEvent.META_CTRL_LEFT_ON;
+    private static final int META_ALT_LEFT = KeyEvent.META_ALT_ON | KeyEvent.META_ALT_LEFT_ON;
 
     private final TestK12KbIME ime;
     private FakeTextField field;
@@ -172,20 +176,58 @@ public final class ImeHarness {
         }
     }
 
+    /** Left Ctrl held around a tap of the key, e.g. ctrl(KEYCODE_V) for paste. */
+    public void ctrl(int keyCode) {
+        chord(KeyEvent.KEYCODE_CTRL_LEFT, META_CTRL_LEFT, keyCode);
+    }
+
+    /** Left Alt held around a tap of the key. */
+    public void alt(int keyCode) {
+        chord(KeyEvent.KEYCODE_ALT_LEFT, META_ALT_LEFT, keyCode);
+    }
+
+    /** One-shot Alt: tap Left Alt on its own, then tap the key. */
+    public void altTap(int keyCode) {
+        tap(KeyEvent.KEYCODE_ALT_LEFT);
+        tap(keyCode);
+    }
+
+    /**
+     * The language key (KEYCODE_0) held around a tap of the key. On the KEY2 this is the
+     * "key 0 + key" chord of keyboard_mechanics.json, e.g. key0(KEYCODE_DEL) deletes the
+     * previous word.
+     */
+    public void key0(int keyCode) {
+        chord(KeyEvent.KEYCODE_0, 0, keyCode);
+    }
+
+    /** Puts plain text on the system clipboard, as another app's copy would. */
+    public void clipboard(String text) {
+        ClipboardManager clipboard = (ClipboardManager) RuntimeEnvironment.getApplication()
+                .getSystemService(Context.CLIPBOARD_SERVICE);
+        clipboard.setPrimaryClip(ClipData.newPlainText(null, text));
+    }
+
     // endregion
 
     // region Internals
 
     /** Left Shift down, tap the key, Shift up, pause. Shift is held under time-short-press. */
     private void shiftedTap(int keyCode) {
-        long shiftDown = now();
-        dispatch(new KeyEvent(shiftDown, shiftDown, KeyEvent.ACTION_DOWN,
-                KeyEvent.KEYCODE_SHIFT_LEFT, 0, META_SHIFT_LEFT));
+        chord(KeyEvent.KEYCODE_SHIFT_LEFT, META_SHIFT_LEFT, keyCode);
+    }
+
+    /**
+     * Holding key down (its events and the tapped key's carry holdMeta), tap the key,
+     * release, pause. The holding key is held under time-short-press.
+     */
+    private void chord(int holdingKey, int holdMeta, int keyCode) {
+        long holdDown = now();
+        dispatch(new KeyEvent(holdDown, holdDown, KeyEvent.ACTION_DOWN, holdingKey, 0, holdMeta));
         advance(TAP_HOLD_MS);
-        tap(keyCode, META_SHIFT_LEFT);
+        tap(keyCode, holdMeta);
         advance(TAP_HOLD_MS);
-        dispatch(new KeyEvent(shiftDown, now(), KeyEvent.ACTION_UP,
-                KeyEvent.KEYCODE_SHIFT_LEFT, 0, 0));
+        dispatch(new KeyEvent(holdDown, now(), KeyEvent.ACTION_UP, holdingKey, 0, 0));
         advance(KEY_GAP_MS);
     }
 

@@ -1067,6 +1067,7 @@ public class K12KbIME extends InputMethodServiceCoreCustomizable implements Keyb
         DropFirstLetterShiftForHangul();
         UpdateHangulStripVisibility();
         ShowWindowForHangulStrip();
+        ClearPredictionOnHangulSwitch();
         if(pref_show_toast) {
             ShowToast(keyboardLayoutManager.GetCurrentKeyboardLayout().KeyboardName);
         }
@@ -1084,6 +1085,7 @@ public class K12KbIME extends InputMethodServiceCoreCustomizable implements Keyb
         DropFirstLetterShiftForHangul();
         UpdateHangulStripVisibility();
         ShowWindowForHangulStrip();
+        ClearPredictionOnHangulSwitch();
         if(pref_show_toast) {
             ShowToast(keyboardLayoutManager.GetCurrentKeyboardLayout().KeyboardName);
         }

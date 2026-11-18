@@ -99,6 +99,82 @@ public class TestK12KbIME extends K12KbIME {
 
     // endregion
 
+    // region Prediction (booted with prediction_enabled = true)
+
+    /**
+     * Puts engine in place of the native SymSpell engine. WordPredictor keeps its engine in static
+     * fields that outlive the IME (and Robolectric keeps statics between tests), so both the static
+     * cache and this IME's predictor are pointed at the new engine. Only the engine is stubbed.
+     */
+    public void installPredictionEngineForTest(com.ai10.k12kb.prediction.PredictionEngine engine) {
+        if (wordPredictor == null)
+            throw new IllegalStateException("prediction is off: boot with prediction_enabled = true");
+        try {
+            Class<?> c = com.ai10.k12kb.prediction.WordPredictor.class;
+            java.lang.reflect.Field dictSize = c.getDeclaredField("dictSize");
+            dictSize.setAccessible(true);
+            setStatic(c, "sharedEngine", engine);
+            setStatic(c, "sharedEngineMode", com.ai10.k12kb.prediction.WordPredictor.ENGINE_NATIVE_SYMSPELL);
+            setStatic(c, "sharedEngineDictSize", dictSize.getInt(wordPredictor));
+            java.lang.reflect.Method adopt = c.getDeclaredMethod("adoptEngine",
+                    com.ai10.k12kb.prediction.PredictionEngine.class);
+            adopt.setAccessible(true);
+            adopt.invoke(wordPredictor, engine);
+        } catch (ReflectiveOperationException e) {
+            throw new AssertionError(e);
+        }
+    }
+
+    private static void setStatic(Class<?> c, String name, Object value) throws ReflectiveOperationException {
+        java.lang.reflect.Field f = c.getDeclaredField(name);
+        f.setAccessible(true);
+        f.set(null, value);
+    }
+
+    /** The suggestion bar is VISIBLE (it may still be empty). */
+    public boolean suggestionBarShownForTest() {
+        return suggestionBar != null && suggestionBar.getVisibility() == android.view.View.VISIBLE;
+    }
+
+    /** Words on the suggestion bar, comma-separated; "" when the bar is hidden or absent. */
+    public String suggestionBarTextForTest() {
+        if (suggestionBar == null || suggestionBar.getVisibility() != android.view.View.VISIBLE)
+            return "";
+        StringBuilder sb = new StringBuilder();
+        collectText(suggestionBar, sb);
+        return sb.toString();
+    }
+
+    private static void collectText(android.view.View view, StringBuilder sb) {
+        if (view instanceof android.widget.TextView) {
+            CharSequence text = ((android.widget.TextView) view).getText();
+            if (text != null && text.length() > 0) {
+                if (sb.length() > 0) sb.append(',');
+                sb.append(text);
+            }
+        } else if (view instanceof android.view.ViewGroup) {
+            android.view.ViewGroup group = (android.view.ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++)
+                collectText(group.getChildAt(i), sb);
+        }
+    }
+
+    /** The predictor's tracked words, "previous|current". */
+    public String predictorWordsForTest() {
+        return wordPredictor.getPreviousWord() + "|" + wordPredictor.getCurrentWord();
+    }
+
+    public boolean translationEnabledForTest() {
+        return translationManager != null && translationManager.isEnabled();
+    }
+
+    /** As if a dictionary load that started earlier finished now. */
+    public void dictionaryLoadedForTest(String locale) {
+        onDictionaryLoaded(locale);
+    }
+
+    // endregion
+
     public void ChangeLanguageForTest() {
         ChangeLanguage();
     }

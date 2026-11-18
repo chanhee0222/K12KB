@@ -2384,7 +2384,8 @@ public abstract class InputMethodServiceCoreCustomizable extends InputMethodServ
 
         AfterSendChar.Process(null, null);
 
-        if (wordPredictor != null && wordPredictor.isEnabled()) {
+        // При хангыле предсказатель не кормим ничем: ни джамо, ни пробелом, цифрами и знаками.
+        if (wordPredictor != null && wordPredictor.isEnabled() && !IsHangulActive()) {
             ShowDictLoadingToast();
             wordPredictor.onCharacterTyped((char) code2send);
         }
@@ -2582,7 +2583,7 @@ public abstract class InputMethodServiceCoreCustomizable extends InputMethodServ
         if(inputConnection!=null) {
             inputConnection.deleteSurroundingText(1, 0);
         }
-        if (wordPredictor != null && wordPredictor.isEnabled()) {
+        if (wordPredictor != null && wordPredictor.isEnabled() && !IsHangulActive()) {
             ShowDictLoadingToast();
             wordPredictor.onBackspace();
         }

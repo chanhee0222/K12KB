@@ -133,6 +133,8 @@ public abstract class InputMethodServiceCorePrediction extends InputMethodServic
 
     protected void updateSuggestionBarWithTranslation(List<WordPredictor.Suggestion> suggestions) {
         if (suggestionBar == null || wordPredictor == null) return;
+        // Ответ движка мог прийти уже после переключения на хангыль: там панели нет.
+        if (IsHangulActive()) return;
         if (predictionBarHiddenByDefault && !predictionBarVisibleThisSession)
             return;
         if (translationManager != null && translationManager.isEnabled()) {
@@ -188,6 +190,8 @@ public abstract class InputMethodServiceCorePrediction extends InputMethodServic
         uiHandler.post(new Runnable() {
             public void run() {
                 if (wordPredictor == null || suggestionBar == null) return;
+                // Загрузка началась на другой раскладке, а закончилась на хангыле.
+                if (IsHangulActive()) return;
                 updatePredictorWordAtCursor();
                 refreshSuggestionBar();
             }
@@ -220,6 +224,8 @@ public abstract class InputMethodServiceCorePrediction extends InputMethodServic
 
     public boolean ActionToggleTranslationMode(KeyPressData keyPressData) {
         if (translationManager == null || suggestionBar == null) return false;
+        // При хангыле перевода нет: Ctrl+T ведёт себя как при выключенных предсказаниях.
+        if (IsHangulActive()) return false;
         // Update languages BEFORE toggle so dictionary loads correct direction
         updateTranslationLanguages();
         String from = translationManager.getSourceLang();
@@ -268,6 +274,8 @@ public abstract class InputMethodServiceCorePrediction extends InputMethodServic
 
     public boolean ActionTogglePredictionBar(KeyPressData keyPressData) {
         if (suggestionBar == null || wordPredictor == null) return false;
+        // При хангыле предсказаний нет: Ctrl+W ведёт себя как при выключенных предсказаниях.
+        if (IsHangulActive()) return false;
 
         if (!predictionBarHiddenByDefault) return false;
 
@@ -318,10 +326,26 @@ public abstract class InputMethodServiceCorePrediction extends InputMethodServic
         }
     }
 
-    /** Идут ли сейчас предсказания: панель видна или показывается сразу. */
+    /**
+     * Идут ли сейчас предсказания: панель видна или показывается сразу. При хангыле — нет: словаря
+     * ko нет, и без этой проверки грузился бы английский.
+     */
     protected boolean PredictionsActive() {
-        return wordPredictor != null
+        return wordPredictor != null && !IsHangulActive()
                 && (!predictionBarHiddenByDefault || predictionBarVisibleThisSession);
+    }
+
+    /**
+     * Раскладка только что сменилась. Если на хангыль: панель очищается и прячется, отслеживаемые
+     * слова забываются. Обратно панель возвращают обычные пути: обновление вида снова её
+     * показывает, а словарь, который запрашивает смена раскладки, по готовности перечитывает
+     * слово у курсора и перерисовывает её.
+     */
+    protected void ClearPredictionOnHangulSwitch() {
+        if (wordPredictor == null || !IsHangulActive()) return;
+        if (suggestionBar != null) suggestionBar.clear();
+        setSuggestionBarShown(false);
+        wordPredictor.clearTracking();
     }
 
     /**
@@ -486,9 +510,10 @@ public abstract class InputMethodServiceCorePrediction extends InputMethodServic
 
     // --- Suggestion bar visibility (replaces framework setCandidatesViewShown) ---
 
+    /** При хангыле панель всегда скрыта: предсказаний для корейского нет. */
     protected void setSuggestionBarShown(boolean shown) {
         if (suggestionBar != null) {
-            suggestionBar.setVisibility(shown ? View.VISIBLE : View.GONE);
+            suggestionBar.setVisibility(shown && !IsHangulActive() ? View.VISIBLE : View.GONE);
         }
     }
 
@@ -643,7 +668,7 @@ public abstract class InputMethodServiceCorePrediction extends InputMethodServic
         // otherwise the extractor's "editor told us nothing, keep tracking" path
         // could carry them over.
         if (wordPredictor != null) wordPredictor.clearTracking();
-        if (wordPredictor != null && !predictionBarHiddenByDefault) {
+        if (wordPredictor != null && !predictionBarHiddenByDefault && !IsHangulActive()) {
             // Панель показывается сразу — значит словарь нужен уже сейчас.
             EnsurePredictionDictionary();
             setSuggestionBarShown(true);

@@ -52,6 +52,7 @@ public final class ImeHarness {
     /** Whatever has focus: the text field or a terminal. Keys the IME declines go here. */
     private InputConnection focused;
     private boolean inputViewCreated;
+    private FakePredictionEngine predictionEngine;
 
     private ImeHarness(TestK12KbIME ime) {
         this.ime = ime;
@@ -72,13 +73,29 @@ public final class ImeHarness {
      * and prediction off. Runs the IME's onCreate.
      */
     public static ImeHarness key2(String... enabledKeyboardMappings) {
+        return boot(false, enabledKeyboardMappings);
+    }
+
+    /**
+     * Like key2, but with word prediction on (the suggestion bar shown by default). The native
+     * SymSpell engine cannot load on the JVM, so a FakePredictionEngine takes its place; the rest
+     * of the prediction path is real. See predictionEngine().
+     */
+    public static ImeHarness key2WithPrediction(String... enabledKeyboardMappings) {
+        ImeHarness h = boot(true, enabledKeyboardMappings);
+        h.predictionEngine = new FakePredictionEngine();
+        h.ime.installPredictionEngineForTest(h.predictionEngine);
+        return h;
+    }
+
+    private static ImeHarness boot(boolean prediction, String... enabledKeyboardMappings) {
         ShadowBuild.setManufacturer("BlackBerry");
         ShadowBuild.setModel("BBF100-1 KEY2");
 
         TestK12KbIME.resetStaticStateForTest();
         K12KbSettings settings = K12KbSettings.Get(RuntimeEnvironment.getApplication()
                 .getSharedPreferences(K12KbSettings.APP_PREFERENCES, Context.MODE_PRIVATE));
-        settings.SetBooleanValue(settings.APP_PREFERENCES_17_PREDICTION_ENABLED, false);
+        settings.SetBooleanValue(settings.APP_PREFERENCES_17_PREDICTION_ENABLED, prediction);
         for (String mapping : enabledKeyboardMappings) {
             settings.SetBooleanValue(LAYOUT_PREF_PREFIX + mapping, true);
         }
@@ -88,6 +105,11 @@ public final class ImeHarness {
 
     public TestK12KbIME ime() {
         return ime;
+    }
+
+    /** The engine behind the predictor; null unless booted with key2WithPrediction. */
+    public FakePredictionEngine predictionEngine() {
+        return predictionEngine;
     }
 
     /** False when onCreate swallowed an exception; see ime().onCreateErrorForTest(). */

@@ -89,6 +89,7 @@ public final class HangulSession {
         if (semantic == null) {
             throw new IllegalArgumentException("not a jamo: U+" + Integer.toHexString(jamo));
         }
+        guardEditorHoldsSyllable();
         int[] snapshot = composer.snapshot();
         String preeditBefore = composer.preeditText();
         HangulComposer.Result result = composer.input(semantic);
@@ -117,6 +118,9 @@ public final class HangulSession {
 
     /** false: нечего удалять в сеансе, пусть удаляет редактор. */
     public boolean backspace() {
+        if (guardEditorHoldsSyllable()) {
+            return false;
+        }
         HangulComposer.Result result = composer.backspace();
         if (terminal) {
             // История сбрасывается, значит удержанное больше не откатить: отправляем.
@@ -143,6 +147,9 @@ public final class HangulSession {
 
     /** false: нет истории отката. */
     public boolean undoLastJamo() {
+        if (guardEditorHoldsSyllable()) {
+            return false;
+        }
         if (history.isEmpty()) {
             return false;
         }
@@ -193,6 +200,24 @@ public final class HangulSession {
         }
         // Пользователь переставил курсор или приложение забрало текст; слог уже в редакторе.
         finish();
+    }
+
+    /**
+     * Отчёт о курсоре может прийти позже следующей клавиши, поэтому перед правкой слога сверяем
+     * редактор вживую. Если он больше не держит наш слог, дописываем и начинаем с чистого листа.
+     * В терминале слог не в редакторе, там проверять нечего.
+     *
+     * @return true, если сеанс завершён из-за расхождения
+     */
+    private boolean guardEditorHoldsSyllable() {
+        if (terminal || !composer.isComposing()) {
+            return false;
+        }
+        if (editor.cursorRightAfter(composer.preeditText())) {
+            return false;
+        }
+        finish();
+        return true;
     }
 
     /** Забывает всё, ничего не пишет в редактор. */

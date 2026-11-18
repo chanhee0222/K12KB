@@ -27,6 +27,29 @@ public final class HangulSessionCursorTest {
         s.onSelectionUpdate(report[0], report[1], report[2], report[3]);
     }
 
+    // Key before report: the field changed, the IME has not been told yet.
+    @Test public void clearedExternallyWithoutReportStartsFresh() {
+        typeJamo(s, "ㅎㅏ"); ed.clearExternally(); typeJamo(s, "ㄴ");
+        assertEquals("[ㄴ]|", ed.shown());
+    }
+
+    @Test public void cursorMovedExternallyWithoutReportComposesAtNewSpot() {
+        typeJamo(s, "ㅎㅏ"); ed.moveCursorExternally(0); typeJamo(s, "ㄴ");
+        assertEquals("[ㄴ]|하", ed.shown());
+    }
+
+    @Test public void backspaceAfterExternalClearReturnsFalse() {
+        typeJamo(s, "ㅎㅏ"); ed.clearExternally();
+        assertFalse(s.backspace());
+        assertFalse(s.isComposing());
+    }
+
+    @Test public void undoAfterExternalClearReturnsFalse() {
+        typeJamo(s, "ㅎㅏ"); ed.clearExternally();
+        assertFalse(s.undoLastJamo());
+        assertFalse(s.isComposing());
+    }
+
     @Test public void ownEchoesKeepComposing() { typeJamo(s, "ㅎㅏ"); feed(ed.report()); typeJamo(s, "ㄴ"); assertEquals("[한]|", ed.shown()); }
 
     @Test public void lateEchoOfForeignWriteIsIgnored() {

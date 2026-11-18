@@ -46,6 +46,35 @@ public class KoreanCursorTest {
         assertEquals("ㅏ|한", f.shown().replace("[", "").replace("]", ""));
     }
 
+    // Key-before-report variants: the next key wins the race against the app's report.
+
+    @Test
+    public void tapElsewhereFinishesWhenKeyBeatsReport() {
+        f.deferReports(true);
+        h.type("gks");
+        f.setSelectionByUser(0);
+        h.type("k");
+        assertEquals("ㅏ|한", f.shown().replace("[", "").replace("]", ""));
+    }
+
+    @Test
+    public void sendButtonClearsFieldWhenKeyBeatsReport() {
+        f.deferReports(true);
+        h.type("gk");
+        f.setText("", 0);
+        h.type("s");
+        assertEquals("[ㄴ]|", f.shown());
+    }
+
+    @Test
+    public void appReplacesTextWhenKeyBeatsReport() {
+        f.deferReports(true);
+        h.type("gk");
+        f.setText("abc", 3);
+        h.type("s");
+        assertEquals("abc[ㄴ]|", f.shown());
+    }
+
     @Test
     public void sendButtonClearsFieldMidSyllable() {
         h.type("gk");

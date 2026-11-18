@@ -160,6 +160,13 @@ public class KeyboardLayoutManager {
             CurrentLanguageListIndex--;
     }
 
+    /** Текущая раскладка собирает хангыль по двухраскладочной схеме 두벌식. */
+    public synchronized boolean IsCurrentLayoutHangul() {
+        if (KeyboardLayoutList.isEmpty())
+            return false;
+        return "hangul-2beolsik".equals(GetCurrentKeyboardLayout().Resources.Composer);
+    }
+
     public synchronized KeyboardLayout GetCurrentKeyboardLayout(){
         return KeyboardLayoutList.get(CurrentLanguageListIndex);
     }

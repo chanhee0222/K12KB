@@ -92,6 +92,13 @@ public class KeyboardLayout {
          */
         @JsonProperty(index=56)
         String Language;
+        /**
+         * Каким автоматом раскладка собирает буквы в слоги; пусто — никаким.
+         * Поведение включается по этому полю, а не по имени раскладки.
+         * Сейчас известно одно значение: "hangul-2beolsik".
+         */
+        @JsonProperty(index=57)
+        String Composer;
 
         @JsonProperty(index=60)
         String CustomKeyboardMechanics;

@@ -28,5 +28,13 @@
     "flag": "ic_flag_gb_col",
     "custom-keyboard-mechanics": "uhtz_titan/titan_keyboard_mechanics",
     "device-model-regexp": "A-Gold Titan"
+  },
+  {
+    "options-name": "Blackberry Key1|2 한국어",
+    "keyboard-mapping": "bb_key_1_2/korean_hw",
+    "custom-keyboard-mechanics": "bb_key_1_2/keyboard_mechanics",
+    "device-model-regexp": "(Blackberry (BBB|BBF|BBE|unknown).*)|(.*KEY2)",
+    "language": "ko",
+    "composer": "hangul-2beolsik"
   }
 ]

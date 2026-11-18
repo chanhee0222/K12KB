@@ -65,6 +65,33 @@ public class TestK12KbIME extends K12KbIME {
         return onCreateError;
     }
 
+    /** Hangul composition is on for the active layout. */
+    @Override
+    public boolean IsHangulActive() {
+        return super.IsHangulActive();
+    }
+
+    /** What the active layout sends for a key; builds the (private-constructor) KeyPressData by reflection. */
+    public int keyToCharCodeForTest(int keyCode, boolean alt, boolean shift) {
+        try {
+            java.lang.reflect.Constructor<KeyPressData> c = KeyPressData.class.getDeclaredConstructor();
+            c.setAccessible(true);
+            KeyPressData data = c.newInstance();
+            data.KeyCode = keyCode;
+            return keyboardLayoutManager.KeyToCharCode(data, alt, shift, false);
+        } catch (ReflectiveOperationException e) {
+            throw new AssertionError(e);
+        }
+    }
+
+    /** Keyboard-mapping resources of every layout in the cycle list. */
+    public java.util.List<String> layoutMappingsForTest() {
+        java.util.List<String> result = new java.util.ArrayList<>();
+        for (KeyboardLayout layout : keyboardLayoutManager.KeyboardLayoutList)
+            result.add(layout.Resources.KeyboardMapping);
+        return result;
+    }
+
     /** Keyboard-mapping resource of the active layout, e.g. "bb_key_1_2/english_hw". */
     public String currentKeyboardMapping() {
         return keyboardLayoutManager.GetCurrentKeyboardLayout().Resources.KeyboardMapping;

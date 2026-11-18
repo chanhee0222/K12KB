@@ -22,6 +22,11 @@ public abstract class InputMethodServiceCorePrediction extends InputMethodServic
     protected boolean dictLoadingToastShown = false;
     protected KeyboardLayoutManager keyboardLayoutManager = new KeyboardLayoutManager();
 
+    /** Активна раскладка, собирающая хангыль (по полю composer, не по имени). */
+    protected boolean IsHangulActive() {
+        return keyboardLayoutManager != null && keyboardLayoutManager.IsCurrentLayoutHangul();
+    }
+
     // --- Fields moved from K12KbIME ---
     protected SuggestionBar suggestionBar;
     protected TranslationManager translationManager;

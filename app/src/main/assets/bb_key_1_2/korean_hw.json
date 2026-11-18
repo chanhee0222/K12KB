@@ -1,0 +1,147 @@
+{
+  "keyboard-name" : "한국어",
+  "alt-mode-layout" : "bb_key_1_2/alt_hw",
+  "sym-mode-layout" : "symbol",
+  "key-mapping" : [
+    {
+      "key-code" : "KEYCODE_4",
+      "single-press" : "$",
+      "single-press-shift-mode" : "$"
+    },
+    {
+      "key-code" : "KEYCODE_Q",
+      "single-press" : "ㅂ",
+      "single-press-shift-mode" : "ㅃ"
+    },
+    {
+      "key-code" : "KEYCODE_W",
+      "single-press" : "ㅈ",
+      "single-press-shift-mode" : "ㅉ"
+    },
+    {
+      "key-code" : "KEYCODE_E",
+      "single-press" : "ㄷ",
+      "single-press-shift-mode" : "ㄸ"
+    },
+    {
+      "key-code" : "KEYCODE_R",
+      "single-press" : "ㄱ",
+      "single-press-shift-mode" : "ㄲ"
+    },
+    {
+      "key-code" : "KEYCODE_T",
+      "single-press" : "ㅅ",
+      "single-press-shift-mode" : "ㅆ"
+    },
+    {
+      "key-code" : "KEYCODE_Y",
+      "single-press" : "ㅛ",
+      "single-press-shift-mode" : "ㅛ"
+    },
+    {
+      "key-code" : "KEYCODE_U",
+      "single-press" : "ㅕ",
+      "single-press-shift-mode" : "ㅕ"
+    },
+    {
+      "key-code" : "KEYCODE_I",
+      "single-press" : "ㅑ",
+      "single-press-shift-mode" : "ㅑ"
+    },
+    {
+      "key-code" : "KEYCODE_O",
+      "single-press" : "ㅐ",
+      "single-press-shift-mode" : "ㅒ"
+    },
+    {
+      "key-code" : "KEYCODE_P",
+      "single-press" : "ㅔ",
+      "single-press-shift-mode" : "ㅖ"
+    },
+    {
+      "key-code" : "KEYCODE_A",
+      "single-press" : "ㅁ",
+      "single-press-shift-mode" : "ㅁ"
+    },
+    {
+      "key-code" : "KEYCODE_S",
+      "single-press" : "ㄴ",
+      "single-press-shift-mode" : "ㄴ"
+    },
+    {
+      "key-code" : "KEYCODE_D",
+      "single-press" : "ㅇ",
+      "single-press-shift-mode" : "ㅇ"
+    },
+    {
+      "key-code" : "KEYCODE_F",
+      "single-press" : "ㄹ",
+      "single-press-shift-mode" : "ㄹ"
+    },
+    {
+      "key-code" : "KEYCODE_G",
+      "single-press" : "ㅎ",
+      "single-press-shift-mode" : "ㅎ"
+    },
+    {
+      "key-code" : "KEYCODE_H",
+      "single-press" : "ㅗ",
+      "single-press-shift-mode" : "ㅗ"
+    },
+    {
+      "key-code" : "KEYCODE_J",
+      "single-press" : "ㅓ",
+      "single-press-shift-mode" : "ㅓ"
+    },
+    {
+      "key-code" : "KEYCODE_K",
+      "single-press" : "ㅏ",
+      "single-press-shift-mode" : "ㅏ"
+    },
+    {
+      "key-code" : "KEYCODE_L",
+      "single-press" : "ㅣ",
+      "single-press-shift-mode" : "ㅣ"
+    },
+    {
+      "key-code" : "KEYCODE_Z",
+      "single-press" : "ㅋ",
+      "single-press-shift-mode" : "ㅋ"
+    },
+    {
+      "key-code" : "KEYCODE_X",
+      "single-press" : "ㅌ",
+      "single-press-shift-mode" : "ㅌ"
+    },
+    {
+      "key-code" : "KEYCODE_C",
+      "single-press" : "ㅊ",
+      "single-press-shift-mode" : "ㅊ"
+    },
+    {
+      "key-code" : "KEYCODE_V",
+      "single-press" : "ㅍ",
+      "single-press-shift-mode" : "ㅍ"
+    },
+    {
+      "key-code" : "KEYCODE_B",
+      "single-press" : "ㅠ",
+      "single-press-shift-mode" : "ㅠ"
+    },
+    {
+      "key-code" : "KEYCODE_N",
+      "single-press" : "ㅜ",
+      "single-press-shift-mode" : "ㅜ"
+    },
+    {
+      "key-code" : "KEYCODE_M",
+      "single-press" : "ㅡ",
+      "single-press-shift-mode" : "ㅡ"
+    },
+    {
+      "key-code" : "KEYCODE_0",
+      "single-press" : "0",
+      "single-press-shift-mode" : "0"
+    }
+  ]
+}

@@ -1174,12 +1174,43 @@ public class K12KbIME extends InputMethodServiceCoreCustomizable implements Keyb
                 + " hideRequested=" + hideRequested
                 + " inputViewShown=" + isInputViewShown()
                                + " IsInputMode=" + IsInputMode());
+        // Окно просим, если его нет хоть по одному признаку: мы его отпускали (hideRequested —
+        // его ставит и onFinishInputView, когда окно убрала система) или IMS считает его скрытым.
+        // Поодиночке оба врут: про IMS см. onStartInputDeferred (Телеграм), а hideRequested не
+        // знает об окне, которое система так и не показала. Повторный запрос системе ничего не
+        // стоит, но и слать его на каждую клавишу при видимой панели незачем.
+        boolean windowMayBeHidden = hideRequested || !ImeWindowShown();
         hideRequested = false;
         keyboardView.setOnTouchListener(this);
         if (keyboardView.getVisibility() != View.VISIBLE)
             keyboardView.setVisibility(View.VISIBLE);
-        if (!keyboardView.isShown())
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            // Не isShown(): в новых Android (проверено на KEY2 с Android 15; в Android 11 ещё
+            // не так) скрытие окна оставляет его view VISIBLE, isShown() после первого же
+            // HideKeyboard отдавал true, и SYM-панель (и навигационная по
+            // удержанию SYM) больше не появлялась до повторного входа в поле. И не showWindow:
+            // Android 15 такой показ отменяет (SHOW_WINDOW_LEGACY_DIRECT, onCancelled at
+            // PHASE_WM_POST_LAYOUT_NOTIFY_CONTROLS_CHANGED) — окно IMS «видно», а система
+            // считает клавиатуру скрытой. Показ, как и скрытие в HideKeyboard, — через систему.
+            if (windowMayBeHidden)
+                RequestShowSelfExplicit();
+        } else if (!keyboardView.isShown()) {
+            // До Android 9 requestShowSelf нет, а hideWindow там прячет и само окно: isShown() верен.
             this.showWindow(true);
+        }
+    }
+
+    /**
+     * requestShowSelf(0): показ по действию пользователя. Отдельный метод, потому что
+     * requestShowSelf финальный, а тестам нужно видеть, просила ли клавиатура окно.
+     */
+    protected void RequestShowSelfExplicit() {
+        this.requestShowSelf(0);
+    }
+
+    /** isInputViewShown() — отдельным методом, чтобы тест мог задать состояние окна. */
+    protected boolean ImeWindowShown() {
+        return isInputViewShown();
     }
 
     @Override

@@ -1239,7 +1239,7 @@ public class K12KbIME extends InputMethodServiceCoreCustomizable implements Keyb
             if( (pref_nav_pad_on_hold && keyboardStateHolding_NavHoldConfirmed)
                     || keyboardStateFixed_NavModeAndKeyboard) {
                 keyboardView.setKeyboard(keyboardNavigation);
-                keyboardView.prepareNavigationLayer();
+                keyboardView.prepareNavigationLayer(IsBlackBerryKeyboardMechanics());
                 needUsefulKeyboard = true;
             }
         } else if (keyboardStateFixed_SymbolOnScreenKeyboard) {

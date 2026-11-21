@@ -1234,7 +1234,9 @@ public class K12KbIME extends InputMethodServiceCoreCustomizable implements Keyb
             } else {
                 changed = UpdateNotification(navFnIconRes, TITLE_NAV_FV_TEXT);
             }
-            if( (pref_nav_pad_on_hold && keyboardStateHolding_NavModeAndKeyboard)
+            // По удержанию — только когда удержание подтвердилось: пока клавишу лишь нажали,
+            // это может быть и нажатие SYM, открывающее или закрывающее SYM-панель.
+            if( (pref_nav_pad_on_hold && keyboardStateHolding_NavHoldConfirmed)
                     || keyboardStateFixed_NavModeAndKeyboard) {
                 keyboardView.setKeyboard(keyboardNavigation);
                 keyboardView.prepareNavigationLayer();

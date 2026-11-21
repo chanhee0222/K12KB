@@ -67,6 +67,13 @@ public abstract class InputMethodServiceCoreCustomizable extends InputMethodServ
     protected boolean keyboardStateFixed_NavModeAndKeyboard;
 
     protected boolean keyboardStateHolding_NavModeAndKeyboard;
+    /**
+     * Клавишу, включившую режим навигации, действительно держат (OnHoldConfirmed), а не просто
+     * нажали: только тогда видна навигационная панель по удержанию. Сам режим навигации включается
+     * сразу при нажатии, а панель раньше показывалась тоже сразу — и на SYM, открывающем и
+     * закрывающем SYM-панель, мелькала на всё время нажатия.
+     */
+    protected boolean keyboardStateHolding_NavHoldConfirmed;
 
     protected boolean needUpdateVisualInsideSingleEvent;
 
@@ -1039,14 +1046,25 @@ public abstract class InputMethodServiceCoreCustomizable extends InputMethodServ
     public boolean ActionSetNavModeHoldOnState() {
         navSwitcherKeyCode = KeyDownList1.get(KeyDownList1.size()-1).KeyCode;
         keyboardStateHolding_NavModeAndKeyboard = true;
+        keyboardStateHolding_NavHoldConfirmed = false;
         OnNavModeChanged();
         return true;
     }
 
     public boolean ActionSetNavModeHoldOffState() {
         keyboardStateHolding_NavModeAndKeyboard = false;
+        keyboardStateHolding_NavHoldConfirmed = false;
         OnNavModeChanged();
         return true;
+    }
+
+    /** Удержание клавиши режима навигации подтвердилось — пора показать навигационную панель. */
+    @Override
+    protected void OnHoldConfirmed(KeyPressData keyPressData) {
+        if (keyboardStateHolding_NavModeAndKeyboard && keyPressData.KeyCode == navSwitcherKeyCode) {
+            keyboardStateHolding_NavHoldConfirmed = true;
+            needUpdateVisualInsideSingleEvent = true;
+        }
     }
 
     protected void keyDownUpKeepTouch2(int keyEventCode, InputConnection ic, int meta) {

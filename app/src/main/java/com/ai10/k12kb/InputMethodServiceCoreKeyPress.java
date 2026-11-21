@@ -320,6 +320,7 @@ public class InputMethodServiceCoreKeyPress extends InputMethodService {
                             NowHoldingPlusKeyNotUndoneSinglePress = null;
                         }
                         keyPressData1.HoldBeginTime = keyDownTime;
+                        OnHoldConfirmed(keyPressData1);
                     }
 
                 }
@@ -329,6 +330,15 @@ public class InputMethodServiceCoreKeyPress extends InputMethodService {
     }
 
     KeyPressData NowHoldingPlusKeyNotUndoneSinglePress = null;
+
+    /**
+     * Нажатие клавиши с on-hold-on стало удержанием: пришёл первый автоповтор позже
+     * time-short-press, её короткое нажатие (если оно ещё не отменено) только что отменено.
+     * Сам on-hold-on сработал раньше — при нажатии, вместе с on-short-press, когда ещё не
+     * было ясно, нажатие это или удержание. Здесь ничего не делает.
+     */
+    protected void OnHoldConfirmed(KeyPressData keyPressData) {
+    }
 
     protected boolean ProcessCoreOnKeyUp(int keyCode, KeyEvent keyEvent, SparseArray<KeyProcessingMode> keyProcessorsMap) {
         int scanCode = keyEvent.getScanCode();

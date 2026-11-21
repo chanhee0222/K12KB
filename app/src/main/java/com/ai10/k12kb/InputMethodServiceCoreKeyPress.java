@@ -195,6 +195,12 @@ public class InputMethodServiceCoreKeyPress extends InputMethodService {
      */
     protected boolean altModeAtKeyDown = false;
 
+    /**
+     * Было ли у последнего нажатия клавиши (repeat 0) в meta state события системного Ctrl.
+     * Условие MetaWasNoCtrlMetaAtKeyDown.
+     */
+    protected boolean ctrlMetaAtKeyDown = false;
+
     /** Режим Alt сейчас; знает о нём только InputMethodServiceCoreCustomizable. */
     protected boolean IsAltModeForKeyDownRecord() {
         return false;
@@ -203,8 +209,10 @@ public class InputMethodServiceCoreKeyPress extends InputMethodService {
     protected boolean ProcessCoreOnKeyDown(int keyCode, KeyEvent keyEvent, SparseArray<KeyProcessingMode> keyProcessingModeList1) {
         int scanCode = keyEvent.getScanCode();
         int repeatCount1 = keyEvent.getRepeatCount();
-        if (repeatCount1 == 0)
+        if (repeatCount1 == 0) {
             altModeAtKeyDown = IsAltModeForKeyDownRecord();
+            ctrlMetaAtKeyDown = keyEvent.isCtrlPressed();
+        }
         long eventTime = keyEvent.getEventTime();
         long keyDownTime = keyEvent.getDownTime();
 

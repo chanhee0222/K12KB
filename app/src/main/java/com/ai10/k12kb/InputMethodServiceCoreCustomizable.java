@@ -734,6 +734,7 @@ public abstract class InputMethodServiceCoreCustomizable extends InputMethodServ
         Methods.put("MetaIsPackageChanged", InitializeMethod3((Object o) -> MetaIsPackageChanged(), Object.class));
         Methods.put("MetaIsAltMode", InitializeMethod3((Object o) -> MetaIsAltMode(), Object.class));
         Methods.put("MetaWasAltModeAtKeyDown", InitializeMethod3((Object o) -> MetaWasAltModeAtKeyDown(), Object.class));
+        Methods.put("MetaWasNoCtrlMetaAtKeyDown", InitializeMethod3((Object o) -> MetaWasNoCtrlMetaAtKeyDown(), Object.class));
         Methods.put("MetaIsAltPressed", InitializeMethod3((Object o) -> MetaIsAltPressed(), Object.class));
         Methods.put("MetaIsCtrlPressed", InitializeMethod3((Object o) -> MetaIsCtrlPressed(), Object.class));
         Methods.put("MetaIsShiftMode", InitializeMethod3((Object o) -> MetaIsShiftMode(), Object.class));
@@ -2175,6 +2176,14 @@ public abstract class InputMethodServiceCoreCustomizable extends InputMethodServ
     /** Режим Alt был включён, когда текущую клавишу нажали (до её действий). */
     public boolean MetaWasAltModeAtKeyDown() {
         return altModeAtKeyDown;
+    }
+
+    /**
+     * Текущую клавишу нажали без системного Ctrl в meta state события. Speed-клавиша KEY2
+     * (KEYCODE_CTRL_RIGHT на LineageOS) приходит с Ctrl, как и любая клавиша, нажатая при ней.
+     */
+    public boolean MetaWasNoCtrlMetaAtKeyDown() {
+        return !ctrlMetaAtKeyDown;
     }
 
     @Override

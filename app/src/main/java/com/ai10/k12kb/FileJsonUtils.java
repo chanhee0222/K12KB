@@ -442,7 +442,7 @@ public class FileJsonUtils {
     }
 
     /** Прогоняет json через цепочку js-патчей. Ничего не пишет на диск. */
-    private static String patchJson(String base_json, String[] Jscripts) throws IOException {
+    static String patchJson(String base_json, String[] Jscripts) throws IOException {
         String updatingJsonText = base_json;
 
 
@@ -454,7 +454,14 @@ public class FileJsonUtils {
         rhino.setOptimizationLevel(-1);
         rhino.setLanguageVersion(org.mozilla.javascript.Context.VERSION_1_7);
         try {
-            Scriptable scope = rhino.initStandardObjects();
+            // Патчи читаются и с общего хранилища, поэтому Java им недоступна:
+            // initSafeStandardObjects не даёт java, Packages и JavaImporter, а запрет
+            // всех классов не пускает Java-объекты в скрипт — иначе e.rhinoException
+            // в catch даёт getClass() и рефлексию. Context здесь всегда новый
+            // (других enter() нет, exit() в finally); на уже настроенном Context
+            // setClassShutter бросил бы SecurityException.
+            rhino.setClassShutter(className -> false);
+            Scriptable scope = rhino.initSafeStandardObjects();
 
             for (String Jscript: Jscripts ) {
 

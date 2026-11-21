@@ -1253,7 +1253,8 @@ public class K12KbIME extends InputMethodServiceCoreCustomizable implements Keyb
             //Keyboard k1 = keyboardLayoutManager.GetSymKeyboard(symPadAltShift);
             Keyboard k1 = new Keyboard(this, keyboardLayoutManager.GetCurrentKeyboardLayout().SymXmlId);
             keyboardView.setKeyboard(k1);
-            keyboardView.prepareSymAltLayer(keyboardLayoutManager.GetCurrentKeyboardLayout(), keyboardLayoutManager.GetDefaultKeyboardLayout(), symPadAltShift);
+            keyboardView.prepareSymAltLayer(keyboardLayoutManager.GetCurrentKeyboardLayout(), keyboardLayoutManager.GetDefaultKeyboardLayout(), symPadAltShift,
+                    IsBlackBerryKeyboardMechanics());
 
             needUsefulKeyboard = true;
 
@@ -1309,6 +1310,14 @@ public class K12KbIME extends InputMethodServiceCoreCustomizable implements Keyb
 
         if (changed && !pref_system_icon_no_notification_text)
             notificationProcessor.UpdateNotificationLayoutMode();
+    }
+
+    /**
+     * Механика клавиатуры — KEY1/KEY2 (bb_key_1_2; она же берётся для устройств, которых нет в
+     * keyboard_layouts.json). У Unihertz Titan и Pocket своя (uhtz_*).
+     */
+    private boolean IsBlackBerryKeyboardMechanics() {
+        return keyboard_mechanics_res != null && keyboard_mechanics_res.startsWith("bb_key_1_2/");
     }
 
     private void UpdateKeyboardViewShiftOneMode(boolean updateSwipePanelData, String languageOnScreenNaming, int flagResId, Drawable flagDrawable) {

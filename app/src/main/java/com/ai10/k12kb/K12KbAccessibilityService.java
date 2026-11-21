@@ -812,7 +812,7 @@ public class K12KbAccessibilityService extends AccessibilityService {
         if(info1 != null) {
             Log.d(TAG3, "GetFocusedNode findFocus FOUND HASH: "+info1.hashCode()
                     + " focused=" + info1.isFocused() + " a11yFocused=" + info1.isAccessibilityFocused()
-                    + " cls=" + info1.getClassName() + " txt=" + info1.getText());
+                    + " cls=" + info1.getClassName());
             return info1;
         } else {
             Log.d(TAG3, "GetFocusedNode findFocus NOT FOUND");
@@ -1460,8 +1460,6 @@ public class K12KbAccessibilityService extends AccessibilityService {
         Log.v(TAG3, "event.getPackageName() " + event.getPackageName());
         Log.v(TAG3, "event.getClassName() " + event.getClassName());
         Log.v(TAG3, "event.getWindowId() " + event.getWindowId());
-        Log.v(TAG3, "event.getText() " + event.getText());
-        Log.v(TAG3, "event.getContentDescription() " + event.getContentDescription());
         AccessibilityNodeInfo info = event.getSource();
         Log.v(TAG3, "event.getSource() HASH " + (info != null ? info.hashCode() : "@NULL"));
         AccessibilityNodeInfo root = getRootInActiveWindow();
@@ -1525,7 +1523,7 @@ public class K12KbAccessibilityService extends AccessibilityService {
                     SetToSetting(searchClickPlugin, info.getViewIdResourceName());
                 } else {
                     //AccessibilityNodeInfo info2 = info.findFocus(AccessibilityNodeInfo.FOCUS_INPUT);
-                    Log.d(TAG3, "SetSearchHack: getViewIdResourceName() == null " + info.getContentDescription());
+                    Log.d(TAG3, "SetSearchHack: getViewIdResourceName() == null");
                 }
             }
         }

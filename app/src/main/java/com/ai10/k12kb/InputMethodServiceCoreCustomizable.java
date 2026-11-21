@@ -1662,7 +1662,6 @@ public abstract class InputMethodServiceCoreCustomizable extends InputMethodServ
     public boolean ActionTryDoubleSpaceDotSpaceConversion() {
         InputConnection inputConnection = getCurrentInputConnection();
         CharSequence back_letter = inputConnection.getTextBeforeCursor(2, 0);
-        Log.d(TAG2, "KEYCODE_SPACE back_letter " + back_letter);
         if (back_letter.length() == 2 && Character.isLetterOrDigit(back_letter.charAt(0)) && back_letter.charAt(1) == ' ') {
             inputConnection.deleteSurroundingText(1, 0);
             inputConnection.commitText(". ", 2);
@@ -2311,7 +2310,6 @@ public abstract class InputMethodServiceCoreCustomizable extends InputMethodServ
 
         BeforeSendChar.Process(null, null);
 
-        Log.v(TAG2, SystemClock.uptimeMillis()+" KEY SEND: "+String.format("%c", code2send));
         sendKeyChar((char) code2send);
 
         AfterSendChar.Process(null, null);

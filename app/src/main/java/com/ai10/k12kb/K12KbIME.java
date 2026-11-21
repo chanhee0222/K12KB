@@ -882,7 +882,7 @@ public class K12KbIME extends InputMethodServiceCoreCustomizable implements Keyb
 
     @Override
     public void onText(CharSequence text) {
-        Log.d(TAG2, "onText: " + text);
+        Log.d(TAG2, "onText: length " + (text != null ? text.length() : -1));
     }
 
     @Override
